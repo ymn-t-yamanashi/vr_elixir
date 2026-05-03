@@ -1,5 +1,9 @@
 # Elixirルール
 
+## 基準
+- 本ファイルに明記がないルールは、以下のElixir Style Guideを基準にする。  
+  https://github.com/christopheradams/elixir_style_guide
+
 ## 命名
 - モジュール名は `PascalCase`、関数名と変数名は `snake_case` を使用する。
 - 真偽値を返す関数は `?` を付ける（例: `connected?`）。
@@ -17,6 +21,7 @@
 
 ## 品質
 - `mix format` を必ず適用する。
+- `mix credo` を実行し、指摘内容を確認してからコミットする。
 - 公開関数には `@doc`、型公開が必要なものには `@spec` を付ける。
 - 単体テストを基本とし、外部通信はモック化して検証する。
 
