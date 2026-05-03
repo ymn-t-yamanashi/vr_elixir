@@ -11,3 +11,4 @@
   - ResoniteLink リリース一覧: https://github.com/Yellow-Dog-Man/ResoniteLink/releases
   - Resonite 公式更新情報（Steam Community）: https://steamcommunity.com/app/2519830/allnews/
 - 設計書には「確認日」と「確認した最新バージョン/更新項目」を記録してから設計を確定する。
+- 設計・実装で使用する命名（メッセージ名、フィールド名、型名）は公式仕様の命名に従う。
