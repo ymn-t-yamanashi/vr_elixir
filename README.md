@@ -8,12 +8,5 @@ Resonite を Elixir から外部操作するための設計ドキュメントを
 - `詳細設計.md`: ResoniteLink 公式モデル準拠の詳細設計
 - `PJルール.md`: プロジェクト運用ルール
 
-## 運用ルール（要点）
-- コミットメッセージは日本語で記述する。
-- ResoniteLink 前提の設計は、事前に公式最新情報を確認する。
-  - https://github.com/Yellow-Dog-Man/ResoniteLink
-  - https://github.com/Yellow-Dog-Man/ResoniteLink/releases
-  - https://steamcommunity.com/app/2519830/allnews/
-
 ## 補足
 実装コードは今後追加予定です。現時点では設計ドキュメントを主対象としています。
