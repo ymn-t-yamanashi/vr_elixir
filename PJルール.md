@@ -3,3 +3,11 @@
 ## Git運用
 - コミットメッセージは必ず日本語で記述する。
 - 必要に応じてブランチ名・PRタイトル・PR説明も日本語で記述する。
+
+## 設計時ルール
+- ResoniteLink を前提に設計する場合、設計開始前に必ず ResoniteLink の最新情報を確認する。
+- 確認先は以下を一次情報として固定する。
+  - ResoniteLink 公式リポジトリ: https://github.com/Yellow-Dog-Man/ResoniteLink
+  - ResoniteLink リリース一覧: https://github.com/Yellow-Dog-Man/ResoniteLink/releases
+  - Resonite 公式更新情報（Steam Community）: https://steamcommunity.com/app/2519830/allnews/
+- 設計書には「確認日」と「確認した最新バージョン/更新項目」を記録してから設計を確定する。
