@@ -101,4 +101,15 @@ defmodule ResoniteLinkEx.ProtocolTest do
   test "validate_payload/2 は removeSlot で slot_id がなければ拒否する" do
     assert {:error, :invalid_request} = Protocol.validate_payload("removeSlot", %{})
   end
+
+  test "encode_request/2 は有効な入力なら送信用 map を返す" do
+    payload = %{parent_id: "Root", name: "BoxA"}
+
+    assert {:ok, %{"$type" => "addSlot", "data" => ^payload}} =
+             Protocol.encode_request("addSlot", payload)
+  end
+
+  test "encode_request/2 は不正な入力なら invalid_request を返す" do
+    assert {:error, :invalid_request} = Protocol.encode_request("addSlot", %{})
+  end
 end

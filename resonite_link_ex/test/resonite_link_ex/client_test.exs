@@ -24,4 +24,21 @@ defmodule ResoniteLinkEx.ClientTest do
   test "connected?/1 は pid 以外で false を返す" do
     refute Client.connected?(:not_pid)
   end
+
+  test "send_command/3 は接続中なら Scene.call/3 の結果を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    payload = %{parent_id: "Root", name: "BoxA"}
+
+    assert {:ok, %{type: "addSlot", payload: ^payload}} =
+             Client.send_command(pid, "addSlot", payload)
+  end
+
+  test "send_command/3 は未接続なら not_connected を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    Process.unlink(pid)
+    Process.exit(pid, :shutdown)
+    Process.sleep(10)
+
+    assert {:error, :not_connected} = Client.send_command(pid, "requestSessionData", %{})
+  end
 end

@@ -3,7 +3,11 @@ defmodule ResoniteLinkEx.Client do
   ResoniteLink 接続管理のクライアントモジュール。
   """
 
+  alias ResoniteLinkEx.Scene
+
   use GenServer
+
+  @not_connected {:error, :not_connected}
 
   @doc """
   クライアントプロセスを起動する。
@@ -19,6 +23,14 @@ defmodule ResoniteLinkEx.Client do
   @spec connected?(pid()) :: boolean()
   def connected?(pid) when is_pid(pid), do: Process.alive?(pid)
   def connected?(_pid), do: false
+
+  @doc """
+  接続中なら Scene へ命令を委譲し、未接続ならエラーを返す。
+  """
+  @spec send_command(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  def send_command(client, type, payload) do
+    if connected?(client), do: Scene.call(client, type, payload), else: @not_connected
+  end
 
   @impl true
   @doc """

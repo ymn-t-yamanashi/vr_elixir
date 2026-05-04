@@ -80,6 +80,19 @@ defmodule ResoniteLinkEx.Protocol do
     @invalid_request
   end
 
+  @doc """
+  送信用リクエスト map（`$type` と `data`）を生成する。
+  """
+  @spec encode_request(String.t(), map()) :: {:ok, map()} | {:error, :invalid_request}
+  def encode_request(type, payload) do
+    with true <- valid_type?(type),
+         {:ok, validated_payload} <- validate_payload(type, payload) do
+      {:ok, %{"$type" => type, "data" => validated_payload}}
+    else
+      _ -> @invalid_request
+    end
+  end
+
   defp has_update_slot_field?(payload) do
     Enum.any?([:position, :rotation, :scale, :name], &Map.has_key?(payload, &1))
   end
