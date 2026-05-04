@@ -6,6 +6,15 @@ defmodule ResoniteLinkEx.Scene do
   alias ResoniteLinkEx.Protocol
 
   @invalid_request {:error, :invalid_request}
+  @supported_commands [
+    "requestSessionData",
+    "addSlot",
+    "updateSlot",
+    "addComponent",
+    "updateComponent",
+    "removeComponent",
+    "removeSlot"
+  ]
 
   @doc """
   指定した `$type` と `payload` で命令を呼び出す。
@@ -16,6 +25,12 @@ defmodule ResoniteLinkEx.Scene do
   def call(_client, type, payload), do: map_result(Protocol.encode_request(type, payload))
 
   @doc """
+  スプリント1で対応する `$type` 命令一覧を返す。
+  """
+  @spec supported_commands() :: [String.t()]
+  def supported_commands, do: @supported_commands
+
+  @doc """
   `call/3` の成功値を返し、失敗時は例外を送出する。
   """
   @spec call!(term(), String.t(), map()) :: map()
@@ -24,6 +39,24 @@ defmodule ResoniteLinkEx.Scene do
       {:ok, response} -> response
       {:error, reason} -> raise "scene call failed: #{inspect(reason)}"
     end
+  end
+
+  @doc """
+  Quad 表示までの代表命令プランを返す。
+  """
+  @spec quad_plan(String.t(), String.t()) :: [{String.t(), map()}]
+  def quad_plan(parent_id, slot_name) when is_binary(parent_id) and is_binary(slot_name) do
+    slot_id = "slot_#{slot_name}"
+    mesh_renderer_id = "mr_#{slot_name}"
+    quad_mesh_id = "mesh_#{slot_name}"
+
+    [
+      {"addSlot", %{parent_id: parent_id, name: slot_name}},
+      {"updateSlot", %{slot_id: slot_id, position: %{x: 0, y: 1, z: 0}}},
+      {"addComponent", %{slot_id: slot_id, component_type: "FrooxEngine.MeshRenderer"}},
+      {"updateComponent",
+       %{component_id: mesh_renderer_id, members: %{"Mesh" => quad_mesh_id, "Enabled" => true}}}
+    ]
   end
 
   defp map_result({:ok, %{"$type" => type, "data" => payload}}),

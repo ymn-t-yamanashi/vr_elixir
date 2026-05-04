@@ -101,4 +101,21 @@ defmodule ResoniteLinkEx.SceneTest do
       Scene.call!(:client, "addSlot", %{name: "BoxA"})
     end
   end
+
+  test "supported_commands/0 はスプリント1対象コマンドを返す" do
+    assert [
+             "requestSessionData",
+             "addSlot",
+             "updateSlot",
+             "addComponent",
+             "updateComponent",
+             "removeComponent",
+             "removeSlot"
+           ] == Scene.supported_commands()
+  end
+
+  test "quad_plan/2 は Quad 表示用の代表命令プランを返す" do
+    plan = Scene.quad_plan("Root", "QuadA")
+    assert [{"addSlot", _}, {"updateSlot", _}, {"addComponent", _}, {"updateComponent", _}] = plan
+  end
 end

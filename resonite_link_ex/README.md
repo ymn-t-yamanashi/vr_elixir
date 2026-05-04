@@ -1,21 +1,31 @@
 # ResoniteLinkEx
 
-**TODO: Add description**
+ResoniteLink 用の Elixir クライアント最小実装です。
 
-## Installation
+## スプリント1対象
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `resonite_link_ex` to your list of dependencies in `mix.exs`:
+- `requestSessionData`
+- `addSlot`
+- `updateSlot`
+- `addComponent`
+- `updateComponent`
+- `removeComponent`
+- `removeSlot`
 
-```elixir
-def deps do
-  [
-    {:resonite_link_ex, "~> 0.1.0"}
-  ]
-end
+## 主な公開 API
+
+- `ResoniteLinkEx.start_client/1`
+- `ResoniteLinkEx.call/3`
+- `ResoniteLinkEx.receive_response/2`
+- `ResoniteLinkEx.Scene.supported_commands/0`
+- `ResoniteLinkEx.Scene.quad_plan/2`
+
+## Docker での品質ゲート
+
+```bash
+docker compose run --rm app bash -lc 'cd resonite_link_ex && mix local.hex --force && mix local.rebar --force && mix deps.get && mix format --check-formatted && mix compile --warnings-as-errors && mix check.docs && mix credo --strict && mix test --cover'
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/resonite_link_ex>.
+## フェイズ1実行手順
 
+ルートの `フェイズ1実行手順.md` を参照してください。
