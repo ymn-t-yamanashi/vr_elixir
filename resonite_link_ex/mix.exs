@@ -22,7 +22,8 @@ defmodule ResoniteLinkEx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:websockex, "~> 0.4"}
+      {:websockex, "~> 0.4"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 end
