@@ -1,0 +1,12 @@
+services:
+  app:
+    image: elixir:1.19
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      RESONITE_HOST: host.docker.internal
+      RESONITE_PORT: "12512"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["mix", "run", "--no-halt"]
