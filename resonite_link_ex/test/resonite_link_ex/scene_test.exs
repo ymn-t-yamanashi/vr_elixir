@@ -28,4 +28,8 @@ defmodule ResoniteLinkEx.SceneTest do
   test "call/3 は addSlot の必須キー不足で invalid_request を返す" do
     assert {:error, :invalid_request} = Scene.call(:client, "addSlot", %{name: "BoxA"})
   end
+
+  test "call/3 は type が文字列でない場合に invalid_request を返す" do
+    assert {:error, :invalid_request} = Scene.call(:client, :add_slot, %{})
+  end
 end
