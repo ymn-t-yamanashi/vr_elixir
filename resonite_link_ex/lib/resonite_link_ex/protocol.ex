@@ -97,7 +97,10 @@ defmodule ResoniteLinkEx.Protocol do
   受信レスポンスを検証して返す。
   """
   @spec decode_response(map()) :: {:ok, map()} | {:error, :decode_error}
-  def decode_response(response) when is_map(response), do: {:ok, response}
+  def decode_response(%{"messageId" => message_id} = response) when is_binary(message_id),
+    do: {:ok, response}
+
+  def decode_response(response) when is_map(response), do: {:error, :decode_error}
   def decode_response(_response), do: {:error, :decode_error}
 
   @doc """

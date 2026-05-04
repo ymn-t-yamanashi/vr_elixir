@@ -116,9 +116,18 @@ defmodule ResoniteLinkEx.ProtocolTest do
     assert {:error, :invalid_request} = Protocol.encode_request("addSlot", %{})
   end
 
-  test "decode_response/1 は map をそのまま ok で返す" do
-    response = %{"status" => "ok"}
+  test "decode_response/1 は messageId を含む map を ok で返す" do
+    response = %{"messageId" => "f47ac10b-58cc-4372-a567-0e02b2c3d479", "status" => "ok"}
     assert {:ok, ^response} = Protocol.decode_response(response)
+  end
+
+  test "decode_response/1 は messageId がない map なら decode_error を返す" do
+    assert {:error, :decode_error} = Protocol.decode_response(%{"status" => "ok"})
+  end
+
+  test "decode_response/1 は messageId が文字列でない map なら decode_error を返す" do
+    assert {:error, :decode_error} =
+             Protocol.decode_response(%{"messageId" => 123, "status" => "ok"})
   end
 
   test "decode_response/1 は map 以外なら decode_error を返す" do
