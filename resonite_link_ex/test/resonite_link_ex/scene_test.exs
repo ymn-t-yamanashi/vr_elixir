@@ -3,8 +3,9 @@ defmodule ResoniteLinkEx.SceneTest do
 
   alias ResoniteLinkEx.Scene
 
-  test "call/3 は現時点で not_implemented を返す" do
-    assert {:error, :not_implemented} = Scene.call(:client, "requestSessionData", %{})
+  test "call/3 は requestSessionData の正常入力で ok を返す" do
+    assert {:ok, %{type: "requestSessionData", payload: %{}}} =
+             Scene.call(:client, "requestSessionData", %{})
   end
 
   test "call/3 は許可リスト外の type で invalid_request を返す" do
@@ -20,9 +21,9 @@ defmodule ResoniteLinkEx.SceneTest do
              Scene.call(:client, "requestSessionData", %{unexpected: true})
   end
 
-  test "call/3 は addSlot の必須キーが揃っていれば not_implemented を返す" do
-    assert {:error, :not_implemented} =
-             Scene.call(:client, "addSlot", %{parent_id: "Root", name: "BoxA"})
+  test "call/3 は addSlot の必須キーが揃っていれば ok を返す" do
+    payload = %{parent_id: "Root", name: "BoxA"}
+    assert {:ok, %{type: "addSlot", payload: ^payload}} = Scene.call(:client, "addSlot", payload)
   end
 
   test "call/3 は addSlot の必須キー不足で invalid_request を返す" do
@@ -33,14 +34,18 @@ defmodule ResoniteLinkEx.SceneTest do
     assert {:error, :invalid_request} = Scene.call(:client, :add_slot, %{})
   end
 
-  test "call/3 は updateSlot の必須条件が揃っていれば not_implemented を返す" do
+  test "call/3 は updateSlot の必須条件が揃っていれば ok を返す" do
     payload = %{slot_id: "SlotA", position: %{x: 0, y: 1, z: 0}}
-    assert {:error, :not_implemented} = Scene.call(:client, "updateSlot", payload)
+
+    assert {:ok, %{type: "updateSlot", payload: ^payload}} =
+             Scene.call(:client, "updateSlot", payload)
   end
 
-  test "call/3 は addComponent の必須条件が揃っていれば not_implemented を返す" do
+  test "call/3 は addComponent の必須条件が揃っていれば ok を返す" do
     payload = %{slot_id: "SlotA", component_type: "FrooxEngine.BoxCollider"}
-    assert {:error, :not_implemented} = Scene.call(:client, "addComponent", payload)
+
+    assert {:ok, %{type: "addComponent", payload: ^payload}} =
+             Scene.call(:client, "addComponent", payload)
   end
 
   test "call/3 は addComponent の必須条件不足で invalid_request を返す" do
@@ -48,9 +53,11 @@ defmodule ResoniteLinkEx.SceneTest do
     assert {:error, :invalid_request} = Scene.call(:client, "addComponent", payload)
   end
 
-  test "call/3 は updateComponent の必須条件が揃っていれば not_implemented を返す" do
+  test "call/3 は updateComponent の必須条件が揃っていれば ok を返す" do
     payload = %{component_id: "CompA", members: %{"Enabled" => true}}
-    assert {:error, :not_implemented} = Scene.call(:client, "updateComponent", payload)
+
+    assert {:ok, %{type: "updateComponent", payload: ^payload}} =
+             Scene.call(:client, "updateComponent", payload)
   end
 
   test "call/3 は updateComponent の必須条件不足で invalid_request を返す" do
@@ -58,18 +65,22 @@ defmodule ResoniteLinkEx.SceneTest do
     assert {:error, :invalid_request} = Scene.call(:client, "updateComponent", payload)
   end
 
-  test "call/3 は removeComponent の必須条件が揃っていれば not_implemented を返す" do
+  test "call/3 は removeComponent の必須条件が揃っていれば ok を返す" do
     payload = %{component_id: "CompA"}
-    assert {:error, :not_implemented} = Scene.call(:client, "removeComponent", payload)
+
+    assert {:ok, %{type: "removeComponent", payload: ^payload}} =
+             Scene.call(:client, "removeComponent", payload)
   end
 
   test "call/3 は removeComponent の必須条件不足で invalid_request を返す" do
     assert {:error, :invalid_request} = Scene.call(:client, "removeComponent", %{})
   end
 
-  test "call/3 は removeSlot の必須条件が揃っていれば not_implemented を返す" do
+  test "call/3 は removeSlot の必須条件が揃っていれば ok を返す" do
     payload = %{slot_id: "SlotA"}
-    assert {:error, :not_implemented} = Scene.call(:client, "removeSlot", payload)
+
+    assert {:ok, %{type: "removeSlot", payload: ^payload}} =
+             Scene.call(:client, "removeSlot", payload)
   end
 
   test "call/3 は removeSlot の必須条件不足で invalid_request を返す" do
