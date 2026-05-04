@@ -3,6 +3,10 @@
 Resonite を Elixir から外部操作するための設計ドキュメントを管理するリポジトリです。  
 接続方式は **ResoniteLink のみ** を対象とします。
 
+## プロジェクト命名
+- Mixプロジェクト名: `:resonite_link_ex`
+- ルートモジュール名: `ResoniteLinkEx`
+
 ## ドキュメント
 - `基本設計.md`: 目的、対象範囲、できること、全体方針
 - `詳細設計.md`: ResoniteLink 公式モデル準拠の詳細設計
