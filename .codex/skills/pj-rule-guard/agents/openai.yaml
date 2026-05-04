@@ -1,0 +1,4 @@
+interface:
+  display_name: "PJ Rule Guard"
+  short_description: "ルール文書の条件改変を検知"
+  default_prompt: "PJルールとElixirルールの変更差分を確認し、条件値・必須・禁止が変わっていないか検証してください。"

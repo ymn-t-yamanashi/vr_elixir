@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit Gate JP"
+  short_description: "コミット前の必須チェック"
+  default_prompt: "コミット前チェックを実行し、品質ゲート・日本語メッセージ・取り残し有無を確認してください。"

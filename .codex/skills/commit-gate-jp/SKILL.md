@@ -1,0 +1,25 @@
+---
+name: commit-gate-jp
+description: このPJでコミット前に必要条件を確認する。日本語コミットメッセージ、品質ゲート成功、未コミット差分の取り残し防止を行う。
+---
+
+# Commit Gate JP
+
+## 利用タイミング
+- コミット直前
+- 複数ファイル変更後の最終確認時
+
+## 手順
+1. `git status --short` で変更ファイルを確認する。
+2. コミット対象外が混在していないか確認する。
+3. 品質ゲートを Docker 内で実行する。
+```bash
+docker compose run --rm app bash -lc "cd resonite_link_ex && mix local.hex --force && mix deps.get && mix format --check-formatted && mix compile --warnings-as-errors && mix check.docs && mix credo --strict && mix test --cover"
+```
+4. コミットメッセージが日本語であることを確認する。
+5. `git add` 対象を明示してコミットする。
+
+## 失敗時の対応
+- 品質ゲート失敗: 失敗ファイルのみ最小修正して再実行
+- 取り残し検知: コミット対象を分割して再実行
+- メッセージ違反: 日本語メッセージに修正
