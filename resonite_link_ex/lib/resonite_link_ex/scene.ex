@@ -15,6 +15,17 @@ defmodule ResoniteLinkEx.Scene do
   def call(_client, _type, payload) when not is_map(payload), do: @invalid_request
   def call(_client, type, payload), do: map_result(Protocol.encode_request(type, payload))
 
+  @doc """
+  `call/3` の成功値を返し、失敗時は例外を送出する。
+  """
+  @spec call!(term(), String.t(), map()) :: map()
+  def call!(client, type, payload) do
+    case call(client, type, payload) do
+      {:ok, response} -> response
+      {:error, reason} -> raise "scene call failed: #{inspect(reason)}"
+    end
+  end
+
   defp map_result({:ok, %{"$type" => type, "data" => payload}}),
     do: {:ok, %{type: type, payload: payload}}
 

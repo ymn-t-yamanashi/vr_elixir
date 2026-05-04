@@ -58,4 +58,59 @@ defmodule ResoniteLinkEx.ClientTest do
 
     assert {:error, :not_connected} = Client.request(pid, "requestSessionData", %{})
   end
+
+  test "request/4 は不正な timeout で invalid_request を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    assert {:error, :invalid_request} = Client.request(pid, "requestSessionData", %{}, 0)
+  end
+
+  test "request/4 は接続中かつ正の timeout で encode_request の結果を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    payload = %{parent_id: "Root", name: "BoxA"}
+
+    assert {:ok, %{"$type" => "addSlot", "data" => ^payload}} =
+             Client.request(pid, "addSlot", payload, 1000)
+  end
+
+  test "request/4 は timeout が整数以外で invalid_request を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    assert {:error, :invalid_request} = Client.request(pid, "requestSessionData", %{}, "1000")
+  end
+
+  test "request/5 は encode 処理が timeout 超過なら request_timeout を返す" do
+    assert {:ok, pid} = Client.start_link([])
+
+    slow_encode = fn _type, _payload ->
+      Process.sleep(20)
+      {:ok, %{"$type" => "dummy", "data" => %{}}}
+    end
+
+    assert {:error, :request_timeout} =
+             Client.request(pid, "requestSessionData", %{}, 1, slow_encode)
+  end
+
+  test "request/5 は未接続なら not_connected を返す" do
+    assert {:error, :not_connected} =
+             Client.request(:not_pid, "requestSessionData", %{}, 1000, fn _type, _payload ->
+               {:ok, %{"$type" => "dummy", "data" => %{}}}
+             end)
+  end
+
+  test "request/5 は接続中なら指定 encode 関数の結果を返す" do
+    assert {:ok, pid} = Client.start_link([])
+
+    assert {:ok, %{"$type" => "requestSessionData", "data" => %{k: "v"}}} =
+             Client.request(pid, "requestSessionData", %{k: "v"}, 1000, fn type, payload ->
+               {:ok, %{"$type" => type, "data" => payload}}
+             end)
+  end
+
+  test "request/5 は不正な timeout で invalid_request を返す" do
+    assert {:ok, pid} = Client.start_link([])
+
+    assert {:error, :invalid_request} =
+             Client.request(pid, "requestSessionData", %{}, 0, fn _type, _payload ->
+               {:ok, %{}}
+             end)
+  end
 end

@@ -90,4 +90,15 @@ defmodule ResoniteLinkEx.SceneTest do
   test "call/3 は updateSlot の必須条件不足で invalid_request を返す" do
     assert {:error, :invalid_request} = Scene.call(:client, "updateSlot", %{slot_id: "SlotA"})
   end
+
+  test "call!/3 は正常入力で ok の値を返す" do
+    payload = %{parent_id: "Root", name: "BoxA"}
+    assert %{type: "addSlot", payload: ^payload} = Scene.call!(:client, "addSlot", payload)
+  end
+
+  test "call!/3 は不正入力で例外を送出する" do
+    assert_raise RuntimeError, ~r/invalid_request/, fn ->
+      Scene.call!(:client, "addSlot", %{name: "BoxA"})
+    end
+  end
 end
