@@ -53,11 +53,7 @@ defmodule ResoniteLinkEx.Protocol do
   end
 
   def validate_payload(@type_update_slot, %{slot_id: _slot_id} = payload) do
-    if has_update_slot_field?(payload) do
-      {:ok, payload}
-    else
-      @invalid_request
-    end
+    if has_update_slot_field?(payload), do: {:ok, payload}, else: @invalid_request
   end
 
   def validate_payload(@type_add_component, %{slot_id: _slot_id, component_type: _type} = payload) do
