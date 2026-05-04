@@ -192,10 +192,12 @@ defmodule ResoniteLinkEx.ClientTest do
   test "receive_response/2 は既知 messageId の pending を解決して削除する" do
     assert {:ok, pid} = Client.start_link([])
     message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    response = %{"messageId" => message_id, "status" => "ok"}
     assert :ok = Client.register_pending(pid, message_id, self())
     assert 1 = Client.pending_count(pid)
-    assert :ok = Client.receive_response(pid, %{"messageId" => message_id, "status" => "ok"})
+    assert :ok = Client.receive_response(pid, response)
     assert 0 = Client.pending_count(pid)
+    assert ^response = Client.last_response(pid)
   end
 
   test "receive_response/2 は未知 messageId で warn ログのみ出力する" do
@@ -219,5 +221,14 @@ defmodule ResoniteLinkEx.ClientTest do
   test "receive_response/2 は不正引数で invalid_request を返す" do
     assert {:error, :invalid_request} = Client.receive_response(:not_pid, %{"messageId" => "id"})
     assert {:error, :invalid_request} = Client.receive_response(self(), :not_map)
+  end
+
+  test "last_response/1 は未受信時に nil を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    assert nil == Client.last_response(pid)
+  end
+
+  test "last_response/1 は pid 以外で invalid_request を返す" do
+    assert {:error, :invalid_request} = Client.last_response(:not_pid)
   end
 end

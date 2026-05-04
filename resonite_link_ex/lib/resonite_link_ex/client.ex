@@ -129,6 +129,13 @@ defmodule ResoniteLinkEx.Client do
   def pending_count(_client), do: @invalid_request
 
   @doc """
+  直近に受信して解決したレスポンスを返す。
+  """
+  @spec last_response(pid()) :: map() | nil | {:error, :invalid_request}
+  def last_response(client) when is_pid(client), do: GenServer.call(client, :last_response)
+  def last_response(_client), do: @invalid_request
+
+  @doc """
   受信レスポンスを処理し、既知 `messageId` なら解決、未知なら warn ログのみ出力する。
   """
   @spec receive_response(pid(), map()) ::
@@ -164,6 +171,10 @@ defmodule ResoniteLinkEx.Client do
 
   @impl true
   def handle_call(:pending_count, _from, state), do: {:reply, map_size(state.pending), state}
+
+  @impl true
+  def handle_call(:last_response, _from, state),
+    do: {:reply, Map.get(state, :last_response), state}
 
   @impl true
   def handle_call({:receive_response, response}, _from, state) do
