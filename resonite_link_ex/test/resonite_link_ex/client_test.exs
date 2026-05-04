@@ -207,7 +207,8 @@ defmodule ResoniteLinkEx.ClientTest do
                  Client.receive_response(pid, %{"messageId" => "unknown-id", "status" => "ok"})
       end)
 
-    assert log =~ "unknown messageId response: unknown-id"
+    assert log =~ "event=unknown_message_id"
+    assert log =~ "message_id=unknown-id"
   end
 
   test "receive_response/2 は decode 失敗で decode_error を返す" do

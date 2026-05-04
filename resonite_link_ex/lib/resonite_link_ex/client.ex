@@ -86,6 +86,7 @@ defmodule ResoniteLinkEx.Client do
       case Task.await(task, timeout_ms) do
         {:ok, %{"messageId" => message_id} = request_map} when is_binary(message_id) ->
           :ok = register_pending(client, message_id, self())
+          log_info("request_enqueued", message_id, type, "success")
           {:ok, request_map}
 
         result ->
@@ -94,6 +95,7 @@ defmodule ResoniteLinkEx.Client do
     catch
       :exit, _reason ->
         _ = Task.shutdown(task, :brutal_kill)
+        log_warn("request_timeout", nil, type, "request_timeout")
         @request_timeout
     end
   end
@@ -169,7 +171,13 @@ defmodule ResoniteLinkEx.Client do
       {:ok, %{"messageId" => message_id} = decoded} ->
         case Map.pop(state.pending, message_id) do
           {nil, _pending} ->
-            Logger.warning("unknown messageId response: #{message_id}")
+            log_warn(
+              "unknown_message_id",
+              message_id,
+              Map.get(decoded, "$type"),
+              "unknown_message_id"
+            )
+
             {:reply, :ok, state}
 
           {_waiter_pid, pending} ->
@@ -177,7 +185,20 @@ defmodule ResoniteLinkEx.Client do
         end
 
       {:error, :decode_error} ->
+        log_warn("decode_error", nil, nil, "decode_error")
         {:reply, {:error, :decode_error}, state}
     end
+  end
+
+  defp log_info(event, message_id, type, status) do
+    Logger.info(log_line("info", event, message_id, type, status))
+  end
+
+  defp log_warn(event, message_id, type, error_reason) do
+    Logger.warning(log_line("warn", event, message_id, type, error_reason))
+  end
+
+  defp log_line(level, event, message_id, type, status_or_error) do
+    "timestamp=#{DateTime.utc_now() |> DateTime.to_iso8601()} level=#{level} event=#{event} message_id=#{message_id || "-"} $type=#{type || "-"} result=#{status_or_error}"
   end
 end
