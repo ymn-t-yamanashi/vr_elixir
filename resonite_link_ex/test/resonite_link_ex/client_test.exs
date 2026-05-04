@@ -46,8 +46,11 @@ defmodule ResoniteLinkEx.ClientTest do
     assert {:ok, pid} = Client.start_link([])
     payload = %{parent_id: "Root", name: "BoxA"}
 
-    assert {:ok, %{"$type" => "addSlot", "data" => ^payload}} =
+    assert {:ok, %{"messageId" => message_id, "$type" => "addSlot", "data" => ^payload}} =
              Client.request(pid, "addSlot", payload)
+
+    assert message_id =~
+             ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/
   end
 
   test "request/3 は未接続なら not_connected を返す" do
@@ -68,8 +71,11 @@ defmodule ResoniteLinkEx.ClientTest do
     assert {:ok, pid} = Client.start_link([])
     payload = %{parent_id: "Root", name: "BoxA"}
 
-    assert {:ok, %{"$type" => "addSlot", "data" => ^payload}} =
+    assert {:ok, %{"messageId" => message_id, "$type" => "addSlot", "data" => ^payload}} =
              Client.request(pid, "addSlot", payload, 1000)
+
+    assert message_id =~
+             ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/
   end
 
   test "request/4 は timeout が整数以外で invalid_request を返す" do

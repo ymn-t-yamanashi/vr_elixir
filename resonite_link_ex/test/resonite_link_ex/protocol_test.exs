@@ -105,8 +105,11 @@ defmodule ResoniteLinkEx.ProtocolTest do
   test "encode_request/2 は有効な入力なら送信用 map を返す" do
     payload = %{parent_id: "Root", name: "BoxA"}
 
-    assert {:ok, %{"$type" => "addSlot", "data" => ^payload}} =
+    assert {:ok, %{"messageId" => message_id, "$type" => "addSlot", "data" => ^payload}} =
              Protocol.encode_request("addSlot", payload)
+
+    assert message_id =~
+             ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/
   end
 
   test "encode_request/2 は不正な入力なら invalid_request を返す" do
@@ -120,5 +123,12 @@ defmodule ResoniteLinkEx.ProtocolTest do
 
   test "decode_response/1 は map 以外なら decode_error を返す" do
     assert {:error, :decode_error} = Protocol.decode_response("not_map")
+  end
+
+  test "generate_message_id/0 は UUID v4 形式の文字列を返す" do
+    message_id = Protocol.generate_message_id()
+
+    assert message_id =~
+             ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/
   end
 end

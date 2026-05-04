@@ -87,7 +87,7 @@ defmodule ResoniteLinkEx.Protocol do
   def encode_request(type, payload) do
     with true <- valid_type?(type),
          {:ok, validated_payload} <- validate_payload(type, payload) do
-      {:ok, %{"$type" => type, "data" => validated_payload}}
+      {:ok, %{"messageId" => generate_message_id(), "$type" => type, "data" => validated_payload}}
     else
       _ -> @invalid_request
     end
@@ -99,6 +99,12 @@ defmodule ResoniteLinkEx.Protocol do
   @spec decode_response(map()) :: {:ok, map()} | {:error, :decode_error}
   def decode_response(response) when is_map(response), do: {:ok, response}
   def decode_response(_response), do: {:error, :decode_error}
+
+  @doc """
+  リクエスト対応付けに使う `UUID v4` 文字列を生成する。
+  """
+  @spec generate_message_id() :: String.t()
+  def generate_message_id, do: UUID.uuid4()
 
   defp has_update_slot_field?(payload) do
     Enum.any?([:position, :rotation, :scale, :name], &Map.has_key?(payload, &1))

@@ -24,6 +24,7 @@ defmodule ResoniteLinkEx.MixProject do
   defp deps do
     [
       {:websockex, "~> 0.4"},
+      {:elixir_uuid, "~> 1.2"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
