@@ -6,6 +6,11 @@ defmodule ResoniteLinkEx.Protocol do
   @invalid_request {:error, :invalid_request}
   @type_request_session_data "requestSessionData"
   @type_add_slot "addSlot"
+  @type_update_slot "updateSlot"
+  @type_add_component "addComponent"
+  @type_update_component "updateComponent"
+  @type_remove_component "removeComponent"
+  @type_remove_slot "removeSlot"
 
   # スプリント1で送信を許可する ResoniteLink の `$type` 一覧。
   @types [
@@ -14,15 +19,15 @@ defmodule ResoniteLinkEx.Protocol do
     # Slot を新規作成する
     @type_add_slot,
     # 既存 Slot を更新する
-    "updateSlot",
+    @type_update_slot,
     # Slot に Component を追加する
-    "addComponent",
+    @type_add_component,
     # 既存 Component を更新する
-    "updateComponent",
+    @type_update_component,
     # Component を削除する
-    "removeComponent",
+    @type_remove_component,
     # Slot を削除する
-    "removeSlot"
+    @type_remove_slot
   ]
 
   @doc """
@@ -47,7 +52,39 @@ defmodule ResoniteLinkEx.Protocol do
     {:ok, payload}
   end
 
+  def validate_payload(@type_update_slot, %{slot_id: _slot_id} = payload) do
+    if has_update_slot_field?(payload) do
+      {:ok, payload}
+    else
+      @invalid_request
+    end
+  end
+
+  def validate_payload(@type_add_component, %{slot_id: _slot_id, component_type: _type} = payload) do
+    {:ok, payload}
+  end
+
+  def validate_payload(
+        @type_update_component,
+        %{component_id: _component_id, members: members} = payload
+      )
+      when is_map(members) do
+    {:ok, payload}
+  end
+
+  def validate_payload(@type_remove_component, %{component_id: _component_id} = payload) do
+    {:ok, payload}
+  end
+
+  def validate_payload(@type_remove_slot, %{slot_id: _slot_id} = payload) do
+    {:ok, payload}
+  end
+
   def validate_payload(_type, _payload) do
     @invalid_request
+  end
+
+  defp has_update_slot_field?(payload) do
+    Enum.any?([:position, :rotation, :scale, :name], &Map.has_key?(payload, &1))
   end
 end

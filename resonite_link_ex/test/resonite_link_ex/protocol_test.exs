@@ -48,4 +48,57 @@ defmodule ResoniteLinkEx.ProtocolTest do
     assert {:error, :invalid_request} =
              Protocol.validate_payload("addSlot", %{parent_id: "Root"})
   end
+
+  test "validate_payload/2 は updateSlot の必須条件を満たせば許可する" do
+    payload = %{slot_id: "SlotA", position: %{x: 0, y: 1, z: 0}}
+    assert {:ok, ^payload} = Protocol.validate_payload("updateSlot", payload)
+  end
+
+  test "validate_payload/2 は updateSlot で slot_id がなければ拒否する" do
+    assert {:error, :invalid_request} =
+             Protocol.validate_payload("updateSlot", %{position: %{x: 0, y: 1, z: 0}})
+  end
+
+  test "validate_payload/2 は updateSlot で更新項目がなければ拒否する" do
+    assert {:error, :invalid_request} =
+             Protocol.validate_payload("updateSlot", %{slot_id: "SlotA"})
+  end
+
+  test "validate_payload/2 は addComponent の必須キーが揃っていれば許可する" do
+    payload = %{slot_id: "SlotA", component_type: "FrooxEngine.BoxCollider"}
+    assert {:ok, ^payload} = Protocol.validate_payload("addComponent", payload)
+  end
+
+  test "validate_payload/2 は addComponent で必須キー不足なら拒否する" do
+    assert {:error, :invalid_request} =
+             Protocol.validate_payload("addComponent", %{slot_id: "SlotA"})
+  end
+
+  test "validate_payload/2 は updateComponent の必須キーが揃っていれば許可する" do
+    payload = %{component_id: "CompA", members: %{"Enabled" => true}}
+    assert {:ok, ^payload} = Protocol.validate_payload("updateComponent", payload)
+  end
+
+  test "validate_payload/2 は updateComponent で必須キー不足なら拒否する" do
+    assert {:error, :invalid_request} =
+             Protocol.validate_payload("updateComponent", %{component_id: "CompA"})
+  end
+
+  test "validate_payload/2 は removeComponent の component_id があれば許可する" do
+    payload = %{component_id: "CompA"}
+    assert {:ok, ^payload} = Protocol.validate_payload("removeComponent", payload)
+  end
+
+  test "validate_payload/2 は removeComponent で component_id がなければ拒否する" do
+    assert {:error, :invalid_request} = Protocol.validate_payload("removeComponent", %{})
+  end
+
+  test "validate_payload/2 は removeSlot の slot_id があれば許可する" do
+    payload = %{slot_id: "SlotA"}
+    assert {:ok, ^payload} = Protocol.validate_payload("removeSlot", payload)
+  end
+
+  test "validate_payload/2 は removeSlot で slot_id がなければ拒否する" do
+    assert {:error, :invalid_request} = Protocol.validate_payload("removeSlot", %{})
+  end
 end
