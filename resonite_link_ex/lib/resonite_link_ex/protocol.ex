@@ -4,13 +4,15 @@ defmodule ResoniteLinkEx.Protocol do
   """
 
   @invalid_request {:error, :invalid_request}
+  @type_request_session_data "requestSessionData"
+  @type_add_slot "addSlot"
 
   # スプリント1で送信を許可する ResoniteLink の `$type` 一覧。
   @types [
     # セッション情報を取得する
-    "requestSessionData",
+    @type_request_session_data,
     # Slot を新規作成する
-    "addSlot",
+    @type_add_slot,
     # 既存 Slot を更新する
     "updateSlot",
     # Slot に Component を追加する
@@ -37,11 +39,11 @@ defmodule ResoniteLinkEx.Protocol do
   `$type` ごとの payload を検証する。
   """
   @spec validate_payload(String.t(), map()) :: {:ok, map()} | {:error, :invalid_request}
-  def validate_payload("requestSessionData", payload) when payload == %{} do
+  def validate_payload(@type_request_session_data, payload) when payload == %{} do
     {:ok, payload}
   end
 
-  def validate_payload("addSlot", %{parent_id: _parent_id, name: _name} = payload) do
+  def validate_payload(@type_add_slot, %{parent_id: _parent_id, name: _name} = payload) do
     {:ok, payload}
   end
 
