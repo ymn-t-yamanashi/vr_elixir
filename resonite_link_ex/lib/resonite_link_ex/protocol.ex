@@ -39,6 +39,10 @@ defmodule ResoniteLinkEx.Protocol do
     {:ok, payload}
   end
 
+  def validate_payload("addSlot", %{parent_id: _parent_id, name: _name} = payload) do
+    {:ok, payload}
+  end
+
   def validate_payload(_type, _payload) do
     {:error, :invalid_request}
   end

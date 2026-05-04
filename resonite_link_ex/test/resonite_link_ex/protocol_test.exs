@@ -33,4 +33,19 @@ defmodule ResoniteLinkEx.ProtocolTest do
   test "validate_payload/2 は対応外 type を拒否する" do
     assert {:error, :invalid_request} = Protocol.validate_payload("addSlot", %{})
   end
+
+  test "validate_payload/2 は addSlot の必須キーが揃っていれば許可する" do
+    payload = %{parent_id: "Root", name: "BoxA"}
+    assert {:ok, ^payload} = Protocol.validate_payload("addSlot", payload)
+  end
+
+  test "validate_payload/2 は addSlot の parent_id がなければ拒否する" do
+    assert {:error, :invalid_request} =
+             Protocol.validate_payload("addSlot", %{name: "BoxA"})
+  end
+
+  test "validate_payload/2 は addSlot の name がなければ拒否する" do
+    assert {:error, :invalid_request} =
+             Protocol.validate_payload("addSlot", %{parent_id: "Root"})
+  end
 end
