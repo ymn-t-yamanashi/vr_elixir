@@ -242,27 +242,8 @@ defmodule ResoniteLinkEx.Client do
   @impl true
   def handle_call({:receive_response, response}, _from, state) do
     case Protocol.decode_response(response) do
-      {:ok, %{"messageId" => message_id} = decoded} ->
-        case Map.pop(state.pending, message_id) do
-          {nil, _pending} ->
-            log_warn(
-              "unknown_message_id",
-              message_id,
-              Map.get(decoded, "$type"),
-              "unknown_message_id"
-            )
-
-            {:reply, :ok, state}
-
-          {_waiter_pid, pending} ->
-            session_ready = state.session_ready or session_data_success?(decoded)
-
-            {:reply, :ok,
-             state
-             |> Map.put(:pending, pending)
-             |> Map.put(:last_response, decoded)
-             |> Map.put(:session_ready, session_ready)}
-        end
+      {:ok, %{"messageId" => _message_id} = decoded} ->
+        resolve_decoded_response(decoded, state)
 
       {:error, :decode_error} ->
         log_warn("decode_error", nil, nil, "decode_error")
@@ -284,4 +265,30 @@ defmodule ResoniteLinkEx.Client do
 
   defp session_data_success?(%{"$type" => "requestSessionData", "status" => "ok"}), do: true
   defp session_data_success?(_response), do: false
+
+  defp resolve_decoded_response(%{"messageId" => message_id} = decoded, state) do
+    case Map.pop(state.pending, message_id) do
+      {nil, _pending} ->
+        log_warn(
+          "unknown_message_id",
+          message_id,
+          Map.get(decoded, "$type"),
+          "unknown_message_id"
+        )
+
+        {:reply, :ok, state}
+
+      {_waiter_pid, pending} ->
+        session_data_success = session_data_success?(decoded)
+        session_ready = state.session_ready or session_data_success
+        reconnecting = if session_data_success, do: false, else: state.reconnecting
+
+        {:reply, :ok,
+         state
+         |> Map.put(:pending, pending)
+         |> Map.put(:last_response, decoded)
+         |> Map.put(:session_ready, session_ready)
+         |> Map.put(:reconnecting, reconnecting)}
+    end
+  end
 end

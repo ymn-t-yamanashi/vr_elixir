@@ -259,6 +259,23 @@ defmodule ResoniteLinkEx.ClientTest do
     assert Client.session_ready?(pid)
   end
 
+  test "requestSessionData 成功応答で reconnecting は false に戻る" do
+    assert {:ok, pid} = Client.start_link([])
+    assert :ok = Client.set_reconnecting(pid, true)
+    assert Client.reconnecting?(pid)
+    message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    assert :ok = Client.register_pending(pid, message_id, self())
+
+    assert :ok =
+             Client.receive_response(pid, %{
+               "messageId" => message_id,
+               "$type" => "requestSessionData",
+               "status" => "ok"
+             })
+
+    refute Client.reconnecting?(pid)
+  end
+
   test "session_ready?/1 は他応答では true にならない" do
     assert {:ok, pid} = Client.start_link([])
     message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
