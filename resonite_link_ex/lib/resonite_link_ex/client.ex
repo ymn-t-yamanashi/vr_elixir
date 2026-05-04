@@ -68,17 +68,26 @@ defmodule ResoniteLinkEx.Client do
 
   def request(client, type, payload, timeout_ms, encode_fun) do
     if connected?(client),
-      do: await_request(type, payload, timeout_ms, encode_fun),
+      do: await_request(client, type, payload, timeout_ms, encode_fun),
       else: @not_connected
   end
 
-  defp await_request(type, payload, timeout_ms, encode_fun) do
+  defp await_request(client, type, payload, timeout_ms, encode_fun) do
     task = Task.async(fn -> encode_fun.(type, payload) end)
 
     try do
-      Task.await(task, timeout_ms)
+      case Task.await(task, timeout_ms) do
+        {:ok, %{"messageId" => message_id} = request_map} when is_binary(message_id) ->
+          :ok = register_pending(client, message_id, self())
+          {:ok, request_map}
+
+        result ->
+          result
+      end
     catch
-      :exit, _reason -> @request_timeout
+      :exit, _reason ->
+        _ = Task.shutdown(task, :brutal_kill)
+        @request_timeout
     end
   end
 

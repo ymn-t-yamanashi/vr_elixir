@@ -104,11 +104,19 @@ defmodule ResoniteLinkEx.ClientTest do
 
   test "request/5 は接続中なら指定 encode 関数の結果を返す" do
     assert {:ok, pid} = Client.start_link([])
+    assert 0 = Client.pending_count(pid)
 
     assert {:ok, %{"$type" => "requestSessionData", "data" => %{k: "v"}}} =
              Client.request(pid, "requestSessionData", %{k: "v"}, 1000, fn type, payload ->
-               {:ok, %{"$type" => type, "data" => payload}}
+               {:ok,
+                %{
+                  "messageId" => "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                  "$type" => type,
+                  "data" => payload
+                }}
              end)
+
+    assert 1 = Client.pending_count(pid)
   end
 
   test "request/5 は不正な timeout で invalid_request を返す" do
@@ -149,5 +157,17 @@ defmodule ResoniteLinkEx.ClientTest do
 
   test "pending_count/1 は pid 以外で invalid_request を返す" do
     assert {:error, :invalid_request} = Client.pending_count(:not_pid)
+  end
+
+  test "request/5 は messageId なしの結果なら pending を増やさない" do
+    assert {:ok, pid} = Client.start_link([])
+    assert 0 = Client.pending_count(pid)
+
+    assert {:ok, %{"$type" => "requestSessionData", "data" => %{}}} =
+             Client.request(pid, "requestSessionData", %{}, 1000, fn _type, _payload ->
+               {:ok, %{"$type" => "requestSessionData", "data" => %{}}}
+             end)
+
+    assert 0 = Client.pending_count(pid)
   end
 end
