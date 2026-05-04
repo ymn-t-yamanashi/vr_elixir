@@ -10,10 +10,15 @@ defmodule ResoniteLinkEx.Scene do
   """
   @spec call(term(), String.t(), map()) :: {:ok, map()} | {:error, term()}
   def call(_client, type, payload) when is_binary(type) and is_map(payload) do
-    if Protocol.valid_type?(type) do
+    with true <- Protocol.valid_type?(type),
+         {:ok, _validated_payload} <- Protocol.validate_payload(type, payload) do
       {:error, :not_implemented}
     else
-      {:error, :invalid_request}
+      false ->
+        {:error, :invalid_request}
+
+      {:error, :invalid_request} ->
+        {:error, :invalid_request}
     end
   end
 
