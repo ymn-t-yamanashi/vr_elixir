@@ -136,6 +136,13 @@ defmodule ResoniteLinkEx.Client do
   def last_response(_client), do: @invalid_request
 
   @doc """
+  `requestSessionData` 成功応答を受信済みなら `true` を返す。
+  """
+  @spec session_ready?(pid()) :: boolean() | {:error, :invalid_request}
+  def session_ready?(client) when is_pid(client), do: GenServer.call(client, :session_ready)
+  def session_ready?(_client), do: @invalid_request
+
+  @doc """
   受信レスポンスを処理し、既知 `messageId` なら解決、未知なら warn ログのみ出力する。
   """
   @spec receive_response(pid(), map()) ::
@@ -150,7 +157,7 @@ defmodule ResoniteLinkEx.Client do
   @doc """
   クライアントの初期状態を構築する。
   """
-  def init(opts), do: {:ok, %{opts: opts, pending: %{}}}
+  def init(opts), do: {:ok, %{opts: opts, pending: %{}, session_ready: false}}
 
   @impl true
   @doc """
@@ -177,6 +184,9 @@ defmodule ResoniteLinkEx.Client do
     do: {:reply, Map.get(state, :last_response), state}
 
   @impl true
+  def handle_call(:session_ready, _from, state), do: {:reply, state.session_ready, state}
+
+  @impl true
   def handle_call({:receive_response, response}, _from, state) do
     case Protocol.decode_response(response) do
       {:ok, %{"messageId" => message_id} = decoded} ->
@@ -192,7 +202,13 @@ defmodule ResoniteLinkEx.Client do
             {:reply, :ok, state}
 
           {_waiter_pid, pending} ->
-            {:reply, :ok, state |> Map.put(:pending, pending) |> Map.put(:last_response, decoded)}
+            session_ready = state.session_ready or session_data_success?(decoded)
+
+            {:reply, :ok,
+             state
+             |> Map.put(:pending, pending)
+             |> Map.put(:last_response, decoded)
+             |> Map.put(:session_ready, session_ready)}
         end
 
       {:error, :decode_error} ->
@@ -212,4 +228,7 @@ defmodule ResoniteLinkEx.Client do
   defp log_line(level, event, message_id, type, status_or_error) do
     "timestamp=#{DateTime.utc_now() |> DateTime.to_iso8601()} level=#{level} event=#{event} message_id=#{message_id || "-"} $type=#{type || "-"} result=#{status_or_error}"
   end
+
+  defp session_data_success?(%{"$type" => "requestSessionData", "status" => "ok"}), do: true
+  defp session_data_success?(_response), do: false
 end

@@ -231,4 +231,44 @@ defmodule ResoniteLinkEx.ClientTest do
   test "last_response/1 は pid 以外で invalid_request を返す" do
     assert {:error, :invalid_request} = Client.last_response(:not_pid)
   end
+
+  test "session_ready?/1 は初期状態で false を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    refute Client.session_ready?(pid)
+  end
+
+  test "session_ready?/1 は requestSessionData 成功応答で true になる" do
+    assert {:ok, pid} = Client.start_link([])
+    message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    assert :ok = Client.register_pending(pid, message_id, self())
+    refute Client.session_ready?(pid)
+
+    assert :ok =
+             Client.receive_response(pid, %{
+               "messageId" => message_id,
+               "$type" => "requestSessionData",
+               "status" => "ok"
+             })
+
+    assert Client.session_ready?(pid)
+  end
+
+  test "session_ready?/1 は他応答では true にならない" do
+    assert {:ok, pid} = Client.start_link([])
+    message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    assert :ok = Client.register_pending(pid, message_id, self())
+
+    assert :ok =
+             Client.receive_response(pid, %{
+               "messageId" => message_id,
+               "$type" => "addSlot",
+               "status" => "ok"
+             })
+
+    refute Client.session_ready?(pid)
+  end
+
+  test "session_ready?/1 は pid 以外で invalid_request を返す" do
+    assert {:error, :invalid_request} = Client.session_ready?(:not_pid)
+  end
 end
