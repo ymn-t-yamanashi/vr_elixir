@@ -14,4 +14,9 @@ defmodule ResoniteLinkEx.SceneTest do
   test "call/3 は payload が map 以外なら invalid_request を返す" do
     assert {:error, :invalid_request} = Scene.call(:client, "requestSessionData", [])
   end
+
+  test "call/3 は payload 検証NGなら invalid_request を返す" do
+    assert {:error, :invalid_request} =
+             Scene.call(:client, "requestSessionData", %{unexpected: true})
+  end
 end
