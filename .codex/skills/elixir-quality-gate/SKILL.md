@@ -11,7 +11,7 @@ description: Elixir変更時に、このPJの品質ゲート（Docker内で form
 ## 利用タイミング
 - `resonite_link_ex` 配下の `.ex` / `.exs` を編集したとき
 - コミット前に品質確認するとき
-- カバレッジ基準（90%以上、目標100%）を確認するとき
+- カバレッジ確認が必要なとき
 
 ## 手順
 1. 変更対象を最小単位で確定する（可能ならファイル単位）。
@@ -29,7 +29,5 @@ docker compose run --rm app bash -lc "cd resonite_link_ex && mix local.hex --for
 - `credo --strict` 失敗: 指摘を最小修正。
 - `test --cover` 失敗: 未カバー分岐をテスト追加で解消（原則先にテスト）。
 
-## プロジェクト運用ルール
-- 実行は必ず Docker 内。
-- 壁打ち中は明示指示があるまでファイル作成・編集・削除をしない。
-- `if/unless` を使う場合は原則1ライナー。
+## 参照
+- 品質基準値・必須条件・禁止事項は `Elixirルール.md` を正本とする。
