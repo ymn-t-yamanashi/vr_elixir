@@ -1,0 +1,4 @@
+interface:
+  display_name: "Elixir Quality Gate"
+  short_description: "Docker内でElixir品質ゲートを実行・解消"
+  default_prompt: "Elixir変更後に品質ゲートを実行し、失敗を最小修正で解消してください。"
