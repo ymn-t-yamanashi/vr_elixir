@@ -38,6 +38,12 @@ defmodule ResoniteLinkEx.Client do
   end
 
   @doc """
+  統一IF。接続中ならリクエストを生成し、未接続ならエラーを返す。
+  """
+  @spec call(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  def call(client, type, payload), do: request(client, type, payload)
+
+  @doc """
   接続中なら送信用リクエストを生成し、未接続ならエラーを返す。
   """
   @spec request(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
