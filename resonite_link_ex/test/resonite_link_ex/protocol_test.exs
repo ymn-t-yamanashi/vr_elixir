@@ -112,4 +112,13 @@ defmodule ResoniteLinkEx.ProtocolTest do
   test "encode_request/2 は不正な入力なら invalid_request を返す" do
     assert {:error, :invalid_request} = Protocol.encode_request("addSlot", %{})
   end
+
+  test "decode_response/1 は map をそのまま ok で返す" do
+    response = %{"status" => "ok"}
+    assert {:ok, ^response} = Protocol.decode_response(response)
+  end
+
+  test "decode_response/1 は map 以外なら decode_error を返す" do
+    assert {:error, :decode_error} = Protocol.decode_response("not_map")
+  end
 end

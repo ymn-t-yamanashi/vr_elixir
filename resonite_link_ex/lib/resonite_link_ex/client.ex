@@ -3,6 +3,7 @@ defmodule ResoniteLinkEx.Client do
   ResoniteLink 接続管理のクライアントモジュール。
   """
 
+  alias ResoniteLinkEx.Protocol
   alias ResoniteLinkEx.Scene
 
   use GenServer
@@ -30,6 +31,14 @@ defmodule ResoniteLinkEx.Client do
   @spec send_command(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
   def send_command(client, type, payload) do
     if connected?(client), do: Scene.call(client, type, payload), else: @not_connected
+  end
+
+  @doc """
+  接続中なら送信用リクエストを生成し、未接続ならエラーを返す。
+  """
+  @spec request(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  def request(client, type, payload) do
+    if connected?(client), do: Protocol.encode_request(type, payload), else: @not_connected
   end
 
   @impl true

@@ -41,4 +41,21 @@ defmodule ResoniteLinkEx.ClientTest do
 
     assert {:error, :not_connected} = Client.send_command(pid, "requestSessionData", %{})
   end
+
+  test "request/3 は接続中なら encode_request の結果を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    payload = %{parent_id: "Root", name: "BoxA"}
+
+    assert {:ok, %{"$type" => "addSlot", "data" => ^payload}} =
+             Client.request(pid, "addSlot", payload)
+  end
+
+  test "request/3 は未接続なら not_connected を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    Process.unlink(pid)
+    Process.exit(pid, :shutdown)
+    Process.sleep(10)
+
+    assert {:error, :not_connected} = Client.request(pid, "requestSessionData", %{})
+  end
 end

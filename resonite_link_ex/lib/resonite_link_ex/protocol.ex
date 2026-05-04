@@ -93,6 +93,13 @@ defmodule ResoniteLinkEx.Protocol do
     end
   end
 
+  @doc """
+  受信レスポンスを検証して返す。
+  """
+  @spec decode_response(map()) :: {:ok, map()} | {:error, :decode_error}
+  def decode_response(response) when is_map(response), do: {:ok, response}
+  def decode_response(_response), do: {:error, :decode_error}
+
   defp has_update_slot_field?(payload) do
     Enum.any?([:position, :rotation, :scale, :name], &Map.has_key?(payload, &1))
   end
