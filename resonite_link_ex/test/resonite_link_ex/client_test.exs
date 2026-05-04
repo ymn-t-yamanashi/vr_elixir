@@ -1,5 +1,6 @@
 defmodule ResoniteLinkEx.ClientTest do
   use ExUnit.Case, async: true
+  import ExUnit.CaptureLog
 
   alias ResoniteLinkEx.Client
 
@@ -169,5 +170,36 @@ defmodule ResoniteLinkEx.ClientTest do
              end)
 
     assert 0 = Client.pending_count(pid)
+  end
+
+  test "receive_response/2 は既知 messageId の pending を解決して削除する" do
+    assert {:ok, pid} = Client.start_link([])
+    message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    assert :ok = Client.register_pending(pid, message_id, self())
+    assert 1 = Client.pending_count(pid)
+    assert :ok = Client.receive_response(pid, %{"messageId" => message_id, "status" => "ok"})
+    assert 0 = Client.pending_count(pid)
+  end
+
+  test "receive_response/2 は未知 messageId で warn ログのみ出力する" do
+    assert {:ok, pid} = Client.start_link([])
+
+    log =
+      capture_log(fn ->
+        assert :ok =
+                 Client.receive_response(pid, %{"messageId" => "unknown-id", "status" => "ok"})
+      end)
+
+    assert log =~ "unknown messageId response: unknown-id"
+  end
+
+  test "receive_response/2 は decode 失敗で decode_error を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    assert {:error, :decode_error} = Client.receive_response(pid, %{"status" => "ok"})
+  end
+
+  test "receive_response/2 は不正引数で invalid_request を返す" do
+    assert {:error, :invalid_request} = Client.receive_response(:not_pid, %{"messageId" => "id"})
+    assert {:error, :invalid_request} = Client.receive_response(self(), :not_map)
   end
 end

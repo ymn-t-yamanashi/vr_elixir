@@ -7,6 +7,7 @@ defmodule ResoniteLinkEx.Client do
   alias ResoniteLinkEx.Scene
 
   use GenServer
+  require Logger
 
   @not_connected {:error, :not_connected}
   @invalid_request {:error, :invalid_request}
@@ -119,6 +120,17 @@ defmodule ResoniteLinkEx.Client do
   def pending_count(client) when is_pid(client), do: GenServer.call(client, :pending_count)
   def pending_count(_client), do: @invalid_request
 
+  @doc """
+  受信レスポンスを処理し、既知 `messageId` なら解決、未知なら warn ログのみ出力する。
+  """
+  @spec receive_response(pid(), map()) ::
+          :ok | {:error, :decode_error} | {:error, :invalid_request}
+  def receive_response(client, response) when is_pid(client) and is_map(response) do
+    GenServer.call(client, {:receive_response, response})
+  end
+
+  def receive_response(_client, _response), do: @invalid_request
+
   @impl true
   @doc """
   クライアントの初期状態を構築する。
@@ -144,4 +156,22 @@ defmodule ResoniteLinkEx.Client do
 
   @impl true
   def handle_call(:pending_count, _from, state), do: {:reply, map_size(state.pending), state}
+
+  @impl true
+  def handle_call({:receive_response, response}, _from, state) do
+    case Protocol.decode_response(response) do
+      {:ok, %{"messageId" => message_id} = decoded} ->
+        case Map.pop(state.pending, message_id) do
+          {nil, _pending} ->
+            Logger.warning("unknown messageId response: #{message_id}")
+            {:reply, :ok, state}
+
+          {_waiter_pid, pending} ->
+            {:reply, :ok, state |> Map.put(:pending, pending) |> Map.put(:last_response, decoded)}
+        end
+
+      {:error, :decode_error} ->
+        {:reply, {:error, :decode_error}, state}
+    end
+  end
 end
