@@ -30,4 +30,16 @@ defmodule ResoniteLinkEx.Protocol do
   end
 
   def valid_type?(_type), do: false
+
+  @doc """
+  `$type` ごとの payload を検証する。
+  """
+  @spec validate_payload(String.t(), map()) :: {:ok, map()} | {:error, :invalid_request}
+  def validate_payload("requestSessionData", payload) when payload == %{} do
+    {:ok, payload}
+  end
+
+  def validate_payload(_type, _payload) do
+    {:error, :invalid_request}
+  end
 end
