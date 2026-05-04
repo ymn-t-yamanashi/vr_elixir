@@ -41,7 +41,11 @@ defmodule ResoniteLinkEx.Client do
   統一IF。接続中ならリクエストを生成し、未接続ならエラーを返す。
   """
   @spec call(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-  def call(client, type, payload), do: request(client, type, payload)
+  def call(client, type, payload) do
+    if connected?(client) and not reconnecting?(client),
+      do: request(client, type, payload),
+      else: @not_connected
+  end
 
   @doc """
   接続中なら送信用リクエストを生成し、未接続ならエラーを返す。
@@ -143,6 +147,24 @@ defmodule ResoniteLinkEx.Client do
   def session_ready?(_client), do: @invalid_request
 
   @doc """
+  再接続中なら `true` を返す。
+  """
+  @spec reconnecting?(pid()) :: boolean() | {:error, :invalid_request}
+  def reconnecting?(client) when is_pid(client), do: GenServer.call(client, :reconnecting)
+  def reconnecting?(_client), do: @invalid_request
+
+  @doc """
+  再接続状態を更新する。
+  """
+  @spec set_reconnecting(pid(), boolean()) :: :ok | {:error, :invalid_request}
+  def set_reconnecting(client, reconnecting)
+      when is_pid(client) and is_boolean(reconnecting) do
+    GenServer.call(client, {:set_reconnecting, reconnecting})
+  end
+
+  def set_reconnecting(_client, _reconnecting), do: @invalid_request
+
+  @doc """
   切断検知トリガーを受け取り、接続状態を未確立へ戻す。
   """
   @spec handle_disconnect(pid(), :close_frame | :tcp_error) :: :ok | {:error, :invalid_request}
@@ -168,7 +190,8 @@ defmodule ResoniteLinkEx.Client do
   @doc """
   クライアントの初期状態を構築する。
   """
-  def init(opts), do: {:ok, %{opts: opts, pending: %{}, session_ready: false}}
+  def init(opts),
+    do: {:ok, %{opts: opts, pending: %{}, session_ready: false, reconnecting: false}}
 
   @impl true
   @doc """
@@ -198,9 +221,22 @@ defmodule ResoniteLinkEx.Client do
   def handle_call(:session_ready, _from, state), do: {:reply, state.session_ready, state}
 
   @impl true
+  def handle_call(:reconnecting, _from, state), do: {:reply, state.reconnecting, state}
+
+  @impl true
+  def handle_call({:set_reconnecting, reconnecting}, _from, state) do
+    {:reply, :ok, Map.put(state, :reconnecting, reconnecting)}
+  end
+
+  @impl true
   def handle_call({:handle_disconnect, reason}, _from, state) do
     log_warn("disconnect_detected", nil, nil, reason)
-    {:reply, :ok, state |> Map.put(:session_ready, false) |> Map.put(:pending, %{})}
+
+    {:reply, :ok,
+     state
+     |> Map.put(:session_ready, false)
+     |> Map.put(:pending, %{})
+     |> Map.put(:reconnecting, true)}
   end
 
   @impl true

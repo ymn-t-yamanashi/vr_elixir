@@ -60,6 +60,12 @@ defmodule ResoniteLinkEx.ClientTest do
     assert {:error, :not_connected} = Client.call(pid, "requestSessionData", %{})
   end
 
+  test "call/3 は再接続中なら not_connected を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    assert :ok = Client.set_reconnecting(pid, true)
+    assert {:error, :not_connected} = Client.call(pid, "requestSessionData", %{})
+  end
+
   test "request/3 は接続中なら encode_request の結果を返す" do
     assert {:ok, pid} = Client.start_link([])
     payload = %{parent_id: "Root", name: "BoxA"}
@@ -272,6 +278,25 @@ defmodule ResoniteLinkEx.ClientTest do
     assert {:error, :invalid_request} = Client.session_ready?(:not_pid)
   end
 
+  test "reconnecting?/1 は初期状態で false を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    refute Client.reconnecting?(pid)
+  end
+
+  test "set_reconnecting/2 で再接続状態を更新できる" do
+    assert {:ok, pid} = Client.start_link([])
+    assert :ok = Client.set_reconnecting(pid, true)
+    assert Client.reconnecting?(pid)
+    assert :ok = Client.set_reconnecting(pid, false)
+    refute Client.reconnecting?(pid)
+  end
+
+  test "reconnecting?/1 と set_reconnecting/2 は不正引数で invalid_request を返す" do
+    assert {:error, :invalid_request} = Client.reconnecting?(:not_pid)
+    assert {:error, :invalid_request} = Client.set_reconnecting(:not_pid, true)
+    assert {:error, :invalid_request} = Client.set_reconnecting(self(), :not_bool)
+  end
+
   test "handle_disconnect/2 は close_frame で session_ready を false に戻し pending を空にする" do
     assert {:ok, pid} = Client.start_link([])
     message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
@@ -291,6 +316,7 @@ defmodule ResoniteLinkEx.ClientTest do
 
     assert :ok = Client.handle_disconnect(pid, :close_frame)
     refute Client.session_ready?(pid)
+    assert Client.reconnecting?(pid)
     assert 0 = Client.pending_count(pid)
   end
 
