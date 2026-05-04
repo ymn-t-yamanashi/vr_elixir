@@ -27,12 +27,13 @@
 ## 品質
 - `mix format` を必ず適用する
 - `mix credo` を実行し、指摘内容を確認してからコミットする
+- コンパイル警告を必ず確認し、警告がある状態でコミットしない
 - テストカバレッジを計測し、結果を確認してからコミットする
 - カバレッジは例外を除き必ず90%以上とする。不可能な場合は事前に相談すること
 - 公開関数には `@doc`、型公開が必要なものには `@spec` を付ける（PJ独自の強化ルール）
 - 単体テストを基本とし、外部通信はモック化して検証する
 - 品質判定は極力Codexの主観ではなく、Elixirツールの結果でブロックする
-- 最低限のブロック条件は `mix format --check-formatted`、`mix credo --strict`、`mix test --cover` の成功とする
+- 最低限のブロック条件は `mix format --check-formatted`、`mix compile --warnings-as-errors`、`mix credo --strict`、`mix test --cover` の成功とする
 
 ## 運用
 - 依存追加時は目的を明記し、最小限にとどめる
