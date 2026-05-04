@@ -65,15 +65,33 @@ if [[ ! -f "$cfg" ]]; then
     fi
   fi
 
-  # 3) Resonite 配下を探索
+  # 3) プロセス由来パス配下を探索（固定パスは使わない）
   if [[ ! -f "$cfg" ]]; then
-    root="/mnt/4tb/SteamLibrary/steamapps/common/Resonite"
-    if [[ -d "$root" ]]; then
-      cand="$(find "$root" -maxdepth 3 -type f -name 'my_config.json' | head -n1 || true)"
-      if [[ -n "$cand" ]]; then
-        cfg="$cand"
-        echo "FOUND(search): $cfg"
+    # cmdline 先頭は dotnet 実行ファイルパス
+    exe_path="${args[0]:-}"
+    base_dir=""
+    if [[ -n "$exe_path" ]]; then
+      base_dir="$(dirname "$exe_path")"
+      # dotnet-runtime 配下なら1階層上を試す
+      if [[ "$(basename "$base_dir")" == "dotnet-runtime" ]]; then
+        base_dir="$(dirname "$base_dir")"
       fi
+    fi
+    if [[ -n "$base_dir" && -d "$base_dir" ]]; then
+      cand="$(find "$base_dir" -maxdepth 4 -type f -name 'my_config.json' | head -n1 || true)"
+      if [[ -n "$cand" && -f "$cand" ]]; then
+        cfg="$cand"
+        echo "FOUND(search-base): $cfg"
+      fi
+    fi
+  fi
+
+  # 4) cwd 近傍を広めに探索
+  if [[ ! -f "$cfg" && -n "${cwd:-}" && -d "$cwd" ]]; then
+    cand="$(find "$cwd" -maxdepth 4 -type f -name 'my_config.json' | head -n1 || true)"
+    if [[ -n "$cand" && -f "$cand" ]]; then
+      cfg="$cand"
+      echo "FOUND(search-cwd): $cfg"
     fi
   fi
 fi
@@ -81,7 +99,8 @@ fi
 if [[ ! -f "$cfg" ]]; then
   echo "ERROR: 設定ファイルが見つかりません。"
   echo "以下を実行して場所を確認してください:"
-  echo "  find /mnt/4tb/SteamLibrary/steamapps/common/Resonite -maxdepth 4 -type f \\( -name '*config*.json' -o -name '*.json' \\) | rg -n 'config|resonite|link'"
+  echo "  tr '\\0' '\\n' < /proc/${pid}/cmdline"
+  echo "  readlink -f /proc/${pid}/cwd"
   exit 1
 fi
 
