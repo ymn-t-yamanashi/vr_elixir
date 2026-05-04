@@ -3,7 +3,11 @@ defmodule ResoniteLinkEx.ClientTest do
 
   alias ResoniteLinkEx.Client
 
-  test "start_link/1 は現時点で not_implemented を返す" do
-    assert {:error, :not_implemented} = Client.start_link([])
+  test "start_link/1 はクライアントプロセスを起動できる" do
+    assert {:ok, pid} = Client.start_link([])
+    assert is_pid(pid)
+    assert Process.alive?(pid)
+
+    Process.exit(pid, :normal)
   end
 end
