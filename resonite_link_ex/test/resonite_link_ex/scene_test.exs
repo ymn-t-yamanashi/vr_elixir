@@ -19,4 +19,13 @@ defmodule ResoniteLinkEx.SceneTest do
     assert {:error, :invalid_request} =
              Scene.call(:client, "requestSessionData", %{unexpected: true})
   end
+
+  test "call/3 は addSlot の必須キーが揃っていれば not_implemented を返す" do
+    assert {:error, :not_implemented} =
+             Scene.call(:client, "addSlot", %{parent_id: "Root", name: "BoxA"})
+  end
+
+  test "call/3 は addSlot の必須キー不足で invalid_request を返す" do
+    assert {:error, :invalid_request} = Scene.call(:client, "addSlot", %{name: "BoxA"})
+  end
 end

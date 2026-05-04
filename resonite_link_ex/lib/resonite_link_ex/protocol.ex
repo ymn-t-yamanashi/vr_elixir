@@ -3,6 +3,8 @@ defmodule ResoniteLinkEx.Protocol do
   ResoniteLink 送受信フォーマットを扱うモジュール。
   """
 
+  @invalid_request {:error, :invalid_request}
+
   # スプリント1で送信を許可する ResoniteLink の `$type` 一覧。
   @types [
     # セッション情報を取得する
@@ -44,6 +46,6 @@ defmodule ResoniteLinkEx.Protocol do
   end
 
   def validate_payload(_type, _payload) do
-    {:error, :invalid_request}
+    @invalid_request
   end
 end
