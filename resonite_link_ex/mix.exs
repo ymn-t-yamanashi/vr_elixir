@@ -7,6 +7,7 @@ defmodule ResoniteLinkEx.MixProject do
       version: "0.1.0",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
+      test_coverage: [ignore_modules: [Mix.Tasks.Check.Docs]],
       deps: deps()
     ]
   end

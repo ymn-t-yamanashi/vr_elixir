@@ -5,6 +5,9 @@ defmodule ResoniteLinkEx.Application do
 
   use Application
 
+  @doc """
+  アプリケーションの supervision tree を起動する。
+  """
   @impl true
   def start(_type, _args) do
     children = [
