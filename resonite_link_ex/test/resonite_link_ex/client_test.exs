@@ -119,4 +119,35 @@ defmodule ResoniteLinkEx.ClientTest do
                {:ok, %{}}
              end)
   end
+
+  test "register_pending/3 と resolve_pending/2 は messageId で対応付けできる" do
+    assert {:ok, pid} = Client.start_link([])
+    waiter_pid = self()
+    message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    assert :ok = Client.register_pending(pid, message_id, waiter_pid)
+    assert 1 = Client.pending_count(pid)
+    assert {:ok, ^waiter_pid} = Client.resolve_pending(pid, message_id)
+    assert 0 = Client.pending_count(pid)
+  end
+
+  test "resolve_pending/2 は未知の messageId で unknown_message_id を返す" do
+    assert {:ok, pid} = Client.start_link([])
+    assert {:error, :unknown_message_id} = Client.resolve_pending(pid, "unknown-id")
+  end
+
+  test "resolve_pending/2 は不正引数で unknown_message_id を返す" do
+    assert {:error, :unknown_message_id} = Client.resolve_pending(:not_pid, "id")
+    assert {:error, :unknown_message_id} = Client.resolve_pending(self(), :not_binary)
+  end
+
+  test "register_pending/3 は不正引数で invalid_request を返す" do
+    assert {:error, :invalid_request} = Client.register_pending(:not_pid, "id", self())
+    assert {:error, :invalid_request} = Client.register_pending(self(), :not_binary, self())
+    assert {:error, :invalid_request} = Client.register_pending(self(), "id", :not_pid)
+  end
+
+  test "pending_count/1 は pid 以外で invalid_request を返す" do
+    assert {:error, :invalid_request} = Client.pending_count(:not_pid)
+  end
 end

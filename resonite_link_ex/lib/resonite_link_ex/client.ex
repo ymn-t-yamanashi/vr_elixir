@@ -82,9 +82,57 @@ defmodule ResoniteLinkEx.Client do
     end
   end
 
+  @doc """
+  `messageId` と待機元 pid を pending へ登録する。
+  """
+  @spec register_pending(pid(), String.t(), pid()) :: :ok | {:error, :invalid_request}
+  def register_pending(client, message_id, waiter_pid)
+      when is_pid(client) and is_binary(message_id) and is_pid(waiter_pid) do
+    GenServer.call(client, {:register_pending, message_id, waiter_pid})
+  end
+
+  def register_pending(_client, _message_id, _waiter_pid), do: @invalid_request
+
+  @doc """
+  `messageId` に対応する pending を解決して待機元 pid を返す。
+  """
+  @spec resolve_pending(pid(), String.t()) :: {:ok, pid()} | {:error, :unknown_message_id}
+  def resolve_pending(client, message_id) when is_pid(client) and is_binary(message_id) do
+    GenServer.call(client, {:resolve_pending, message_id})
+  end
+
+  def resolve_pending(_client, _message_id), do: {:error, :unknown_message_id}
+
+  @doc """
+  現在の pending 件数を返す。
+  """
+  @spec pending_count(pid()) :: non_neg_integer() | {:error, :invalid_request}
+  def pending_count(client) when is_pid(client), do: GenServer.call(client, :pending_count)
+  def pending_count(_client), do: @invalid_request
+
   @impl true
   @doc """
   クライアントの初期状態を構築する。
   """
-  def init(opts), do: {:ok, %{opts: opts}}
+  def init(opts), do: {:ok, %{opts: opts, pending: %{}}}
+
+  @impl true
+  @doc """
+  pending 管理に関する同期リクエストを処理する。
+  """
+  def handle_call({:register_pending, message_id, waiter_pid}, _from, state) do
+    pending = Map.put(state.pending, message_id, waiter_pid)
+    {:reply, :ok, %{state | pending: pending}}
+  end
+
+  @impl true
+  def handle_call({:resolve_pending, message_id}, _from, state) do
+    case Map.pop(state.pending, message_id) do
+      {nil, _pending} -> {:reply, {:error, :unknown_message_id}, state}
+      {waiter_pid, pending} -> {:reply, {:ok, waiter_pid}, %{state | pending: pending}}
+    end
+  end
+
+  @impl true
+  def handle_call(:pending_count, _from, state), do: {:reply, map_size(state.pending), state}
 end
