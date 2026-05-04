@@ -143,6 +143,17 @@ defmodule ResoniteLinkEx.Client do
   def session_ready?(_client), do: @invalid_request
 
   @doc """
+  切断検知トリガーを受け取り、接続状態を未確立へ戻す。
+  """
+  @spec handle_disconnect(pid(), :close_frame | :tcp_error) :: :ok | {:error, :invalid_request}
+  def handle_disconnect(client, reason)
+      when is_pid(client) and reason in [:close_frame, :tcp_error] do
+    GenServer.call(client, {:handle_disconnect, reason})
+  end
+
+  def handle_disconnect(_client, _reason), do: @invalid_request
+
+  @doc """
   受信レスポンスを処理し、既知 `messageId` なら解決、未知なら warn ログのみ出力する。
   """
   @spec receive_response(pid(), map()) ::
@@ -185,6 +196,12 @@ defmodule ResoniteLinkEx.Client do
 
   @impl true
   def handle_call(:session_ready, _from, state), do: {:reply, state.session_ready, state}
+
+  @impl true
+  def handle_call({:handle_disconnect, reason}, _from, state) do
+    log_warn("disconnect_detected", nil, nil, reason)
+    {:reply, :ok, state |> Map.put(:session_ready, false) |> Map.put(:pending, %{})}
+  end
 
   @impl true
   def handle_call({:receive_response, response}, _from, state) do

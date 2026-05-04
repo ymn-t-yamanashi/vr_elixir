@@ -271,4 +271,36 @@ defmodule ResoniteLinkEx.ClientTest do
   test "session_ready?/1 は pid 以外で invalid_request を返す" do
     assert {:error, :invalid_request} = Client.session_ready?(:not_pid)
   end
+
+  test "handle_disconnect/2 は close_frame で session_ready を false に戻し pending を空にする" do
+    assert {:ok, pid} = Client.start_link([])
+    message_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    assert :ok = Client.register_pending(pid, message_id, self())
+
+    assert :ok =
+             Client.receive_response(pid, %{
+               "messageId" => message_id,
+               "$type" => "requestSessionData",
+               "status" => "ok"
+             })
+
+    assert Client.session_ready?(pid)
+    assert 0 = Client.pending_count(pid)
+    assert :ok = Client.register_pending(pid, "f47ac10b-58cc-4372-a567-0e02b2c3d470", self())
+    assert 1 = Client.pending_count(pid)
+
+    assert :ok = Client.handle_disconnect(pid, :close_frame)
+    refute Client.session_ready?(pid)
+    assert 0 = Client.pending_count(pid)
+  end
+
+  test "handle_disconnect/2 は tcp_error で受け付ける" do
+    assert {:ok, pid} = Client.start_link([])
+    assert :ok = Client.handle_disconnect(pid, :tcp_error)
+  end
+
+  test "handle_disconnect/2 は不正引数で invalid_request を返す" do
+    assert {:error, :invalid_request} = Client.handle_disconnect(:not_pid, :close_frame)
+    assert {:error, :invalid_request} = Client.handle_disconnect(self(), :pong_timeout)
+  end
 end
