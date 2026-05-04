@@ -15,9 +15,6 @@ Resonite を Elixir から外部操作するための設計ドキュメントを
 ## 補足
 実装コードは今後追加予定です。現時点では設計ドキュメントを主対象としています。
 
-## Docker実行（Make）
-- `make up`: アプリをDockerで起動（`mix run --no-halt`）
-- `make test`: Docker内で `mix test` を実行
-- `make format`: Docker内で `mix format --check-formatted` を実行
-- `make credo`: Docker内で `mix credo --strict` を実行
-- `make check`: `format` → `credo` → `test` を順に実行
+## 実行手順
+- Docker内での品質ゲート実行手順は `.codex/skills/elixir-quality-gate/SKILL.md` を参照する。
+- コミット前チェック手順は `.codex/skills/commit-gate-jp/SKILL.md` を参照する。
