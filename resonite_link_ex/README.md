@@ -29,3 +29,13 @@ docker compose run --rm app bash -lc 'cd resonite_link_ex && mix local.hex --for
 ## フェイズ1実行手順
 
 ルートの `フェイズ1実行手順.md` を参照してください。
+
+## サンプル実行（赤い正方形）
+
+Resonite 側で ResoniteLink を有効化した状態で実行します。ポート指定は必須です。
+
+```bash
+mix run examples/red_square_sample.exs --port 9342
+```
+
+接続先ホストは `localhost` 固定です（`127.0.0.1` は使用しません）。

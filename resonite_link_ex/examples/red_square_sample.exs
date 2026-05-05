@@ -7,18 +7,18 @@ defmodule RedSquareSample do
   require Logger
 
   @host "localhost"
-  @port 9341
 
-  def start_link do
-    WebSockex.start_link("ws://#{@host}:#{@port}", __MODULE__, :no_state,
-      extra_headers: [{"Host", "#{@host}:#{@port}"}]
+  def start_link(port) when is_integer(port) do
+    WebSockex.start_link("ws://#{@host}:#{port}", __MODULE__, :no_state,
+      extra_headers: [{"Host", "#{@host}:#{port}"}]
     )
   end
 
   def run do
+    port = parse_port(System.argv())
     suffix = UUID.uuid4() |> String.slice(0, 8)
     ids = build_ids(suffix)
-    {:ok, pid} = start_link()
+    {:ok, pid} = start_link(port)
     send_add_slot(pid, ids)
     send_add_quad_mesh(pid, ids)
     send_add_pbs_metallic(pid, ids)
@@ -157,6 +157,23 @@ defmodule RedSquareSample do
       material_id: "sample_red_square_mat_#{suffix}",
       renderer_id: "sample_red_square_renderer_#{suffix}"
     }
+  end
+
+  defp parse_port(args) do
+    cleaned = Enum.reject(args, &(&1 == "--"))
+
+    case cleaned do
+      ["--port", port_text | _rest] -> parse_port_value(port_text)
+      [port_text | _rest] -> parse_port_value(port_text)
+      [] -> raise("ポート指定は必須です。例: mix run examples/red_square_sample.exs -- --port 9341")
+    end
+  end
+
+  defp parse_port_value(port_text) do
+    case Integer.parse(port_text) do
+      {port, ""} when port > 0 and port <= 65_535 -> port
+      _ -> raise "ポート指定が不正です。1-65535 の整数を指定してください。例: --port 9341"
+    end
   end
 end
 
