@@ -24,6 +24,22 @@ defmodule ResoniteLinkEx.Transport do
   def start_link(_client_pid, _opts), do: {:error, :invalid_request}
 
   @doc """
+  map ペイロードを JSON として送信する。
+  """
+  @spec send_json(pid(), map()) :: :ok | {:error, :invalid_request}
+  def send_json(transport_pid, payload) when is_pid(transport_pid) and is_map(payload) do
+    case encode_outbound(payload) do
+      {:ok, json} ->
+        WebSockex.cast(transport_pid, {:send_text, json})
+
+      {:error, :invalid_request} ->
+        {:error, :invalid_request}
+    end
+  end
+
+  def send_json(_transport_pid, _payload), do: {:error, :invalid_request}
+
+  @doc """
   送信 map を JSON 文字列にエンコードする。
   """
   @spec encode_outbound(map()) :: {:ok, String.t()} | {:error, :invalid_request}
@@ -85,6 +101,11 @@ defmodule ResoniteLinkEx.Transport do
     {:ok, request} = Protocol.encode_request("requestSessionData", %{})
     _ = Client.register_pending(state.client_pid, request["messageId"], self())
     {:ok, json} = encode_outbound(request)
+    {:reply, {:text, json}, state}
+  end
+
+  @impl true
+  def handle_cast({:send_text, json}, state) when is_binary(json) do
     {:reply, {:text, json}, state}
   end
 
