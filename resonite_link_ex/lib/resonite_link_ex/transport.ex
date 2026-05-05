@@ -10,7 +10,7 @@ defmodule ResoniteLinkEx.Transport do
 
   @default_host "host.docker.internal"
   @default_port 12_512
-  @default_path "/"
+  @default_path ""
 
   @doc """
   トランスポートプロセスを起動する。
@@ -18,7 +18,7 @@ defmodule ResoniteLinkEx.Transport do
   @spec start_link(pid(), keyword()) :: {:ok, pid()} | {:error, term()}
   def start_link(client_pid, opts) when is_pid(client_pid) and is_list(opts) do
     state = %{client_pid: client_pid, opts: opts}
-    WebSockex.start_link(build_url(opts), __MODULE__, state)
+    WebSockex.start_link(build_url(opts), __MODULE__, state, extra_headers: build_headers(opts))
   end
 
   def start_link(_client_pid, _opts), do: {:error, :invalid_request}
@@ -63,6 +63,13 @@ defmodule ResoniteLinkEx.Transport do
     "ws://#{host}:#{port}#{normalize_path(path)}"
   end
 
+  @spec build_headers(keyword()) :: [{String.t(), String.t()}]
+  defp build_headers(opts) do
+    host = Keyword.get(opts, :host, @default_host)
+    port = Keyword.get(opts, :port, @default_port)
+    [{"Host", "#{host}:#{port}"}]
+  end
+
   @impl true
   @doc """
   WebSocket 接続確立時に初期ハンドシェイクを送信する。
@@ -99,6 +106,10 @@ defmodule ResoniteLinkEx.Transport do
   end
 
   defp normalize_path(path) when is_binary(path) do
-    if String.starts_with?(path, "/"), do: path, else: "/#{path}"
+    cond do
+      path == "" -> ""
+      String.starts_with?(path, "/") -> path
+      true -> "/#{path}"
+    end
   end
 end

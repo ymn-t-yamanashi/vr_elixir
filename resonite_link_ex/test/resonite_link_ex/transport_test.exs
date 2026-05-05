@@ -5,7 +5,7 @@ defmodule ResoniteLinkEx.TransportTest do
   alias ResoniteLinkEx.Transport
 
   test "build_url/1 は既定値で URL を生成する" do
-    assert "ws://host.docker.internal:12512/" == Transport.build_url([])
+    assert "ws://host.docker.internal:12512" == Transport.build_url([])
   end
 
   test "build_url/1 は host/port/path 指定を反映する" do
