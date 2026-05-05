@@ -50,13 +50,12 @@ defmodule ResoniteLinkEx.TransportTest do
     assert {:error, _reason} = Transport.start_link(client, host: "127.0.0.1", port: 1, path: "/")
   end
 
-  test "handle_connect/2 は requestSessionData を text frame で返す" do
+  test "handle_connect/2 は初期要求送信用 cast を予約して :ok を返す" do
     assert {:ok, client} = Client.start_link([])
     assert :ok = Client.set_reconnecting(client, true)
     state = %{client_pid: client, opts: []}
 
-    assert {:reply, {:text, json}, ^state} = Transport.handle_connect(:connected, state)
-    assert is_binary(json)
+    assert {:ok, ^state} = Transport.handle_connect(:connected, state)
     refute Client.reconnecting?(client)
   end
 
@@ -74,7 +73,7 @@ defmodule ResoniteLinkEx.TransportTest do
     state = %{client_pid: client, opts: []}
     assert :ok = Client.register_pending(client, message_id, self())
 
-    json = "{\"messageId\":\"#{message_id}\",\"$type\":\"requestSessionData\",\"status\":\"ok\"}"
+    json = "{\"sourceMessageId\":\"#{message_id}\",\"$type\":\"sessionData\",\"success\":true}"
     assert {:ok, ^state} = Transport.handle_frame({:text, json}, state)
     assert Client.session_ready?(client)
   end

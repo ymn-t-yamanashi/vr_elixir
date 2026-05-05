@@ -76,7 +76,14 @@ defmodule ResoniteLinkEx.Transport do
   """
   def handle_connect(_conn, state) do
     _ = Client.set_reconnecting(state.client_pid, false)
+    _ = WebSockex.cast(self(), :send_initial_session_request)
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_cast(:send_initial_session_request, state) do
     {:ok, request} = Protocol.encode_request("requestSessionData", %{})
+    _ = Client.register_pending(state.client_pid, request["messageId"], self())
     {:ok, json} = encode_outbound(request)
     {:reply, {:text, json}, state}
   end

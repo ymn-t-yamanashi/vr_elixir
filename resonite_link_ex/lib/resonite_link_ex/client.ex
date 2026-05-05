@@ -263,7 +263,7 @@ defmodule ResoniteLinkEx.Client do
     "timestamp=#{DateTime.utc_now() |> DateTime.to_iso8601()} level=#{level} event=#{event} message_id=#{message_id || "-"} $type=#{type || "-"} result=#{status_or_error}"
   end
 
-  defp session_data_success?(%{"$type" => "requestSessionData", "status" => "ok"}), do: true
+  defp session_data_success?(%{"$type" => "sessionData", "success" => true}), do: true
   defp session_data_success?(_response), do: false
 
   defp resolve_decoded_response(%{"messageId" => message_id} = decoded, state) do
