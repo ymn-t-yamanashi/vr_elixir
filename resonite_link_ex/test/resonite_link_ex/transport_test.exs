@@ -13,6 +13,16 @@ defmodule ResoniteLinkEx.TransportTest do
              Transport.build_url(host: "example.local", port: 9999, path: "ws")
   end
 
+  test "build_url/1 は空 path を許可する" do
+    assert "ws://example.local:9999" ==
+             Transport.build_url(host: "example.local", port: 9999, path: "")
+  end
+
+  test "build_url/1 は先頭スラッシュ付き path をそのまま使う" do
+    assert "ws://example.local:9999/ws" ==
+             Transport.build_url(host: "example.local", port: 9999, path: "/ws")
+  end
+
   test "encode_outbound/1 は map を JSON へ変換する" do
     assert {:ok, json} = Transport.encode_outbound(%{"k" => "v"})
     assert is_binary(json)
@@ -50,6 +60,38 @@ defmodule ResoniteLinkEx.TransportTest do
     assert {:error, _reason} = Transport.start_link(client, host: "127.0.0.1", port: 1, path: "/")
   end
 
+  test "start_link/2 はローカルWSサーバーへ接続できる" do
+    {server_pid, port} = start_ws_mock_server()
+    assert {:ok, client} = Client.start_link([])
+    assert {:ok, transport} = Transport.start_link(client, host: "localhost", port: port, path: "")
+    assert is_pid(transport)
+    Process.exit(transport, :normal)
+    Process.exit(server_pid, :normal)
+  end
+
+  test "send_json/2 は不正引数で invalid_request を返す" do
+    assert {:error, :invalid_request} = Transport.send_json(:not_pid, %{})
+    assert {:error, :invalid_request} = Transport.send_json(self(), :not_map)
+  end
+
+  test "send_json/2 は有効payloadを送信できる" do
+    {server_pid, port} = start_ws_mock_server()
+    assert {:ok, client} = Client.start_link([])
+    assert {:ok, transport} = Transport.start_link(client, host: "localhost", port: port, path: "")
+    assert :ok = Transport.send_json(transport, %{"$type" => "requestSessionData", "data" => %{}})
+    Process.exit(transport, :normal)
+    Process.exit(server_pid, :normal)
+  end
+
+  test "send_json/2 はJSON化できないpayloadで invalid_request を返す" do
+    {server_pid, port} = start_ws_mock_server()
+    assert {:ok, client} = Client.start_link([])
+    assert {:ok, transport} = Transport.start_link(client, host: "localhost", port: port, path: "")
+    assert {:error, :invalid_request} = Transport.send_json(transport, %{"bad" => self()})
+    Process.exit(transport, :normal)
+    Process.exit(server_pid, :normal)
+  end
+
   test "handle_connect/2 は初期要求送信用 cast を予約して :ok を返す" do
     assert {:ok, client} = Client.start_link([])
     assert :ok = Client.set_reconnecting(client, true)
@@ -65,6 +107,23 @@ defmodule ResoniteLinkEx.TransportTest do
 
     assert {:ok, ^state} = Transport.handle_disconnect({:error, :econnrefused}, state)
     assert Client.reconnecting?(client)
+  end
+
+  test "handle_cast/2 は初期要求送信を text frame に変換し pending 登録する" do
+    assert {:ok, client} = Client.start_link([])
+    state = %{client_pid: client, opts: []}
+
+    assert {:reply, {:text, json}, ^state} =
+             Transport.handle_cast(:send_initial_session_request, state)
+
+    assert is_binary(json)
+    assert 1 = Client.pending_count(client)
+  end
+
+  test "handle_cast/2 は send_text をそのまま text frame で返す" do
+    assert {:ok, client} = Client.start_link([])
+    state = %{client_pid: client, opts: []}
+    assert {:reply, {:text, "hello"}, ^state} = Transport.handle_cast({:send_text, "hello"}, state)
   end
 
   test "handle_frame/2 は text JSON を Client へ連携する" do
@@ -88,5 +147,49 @@ defmodule ResoniteLinkEx.TransportTest do
     assert {:ok, client} = Client.start_link([])
     state = %{client_pid: client, opts: []}
     assert {:ok, ^state} = Transport.handle_frame({:binary, <<1, 2>>}, state)
+  end
+
+  defp start_ws_mock_server do
+    {:ok, listen_socket} =
+      :gen_tcp.listen(0, [:binary, packet: :raw, active: false, reuseaddr: true])
+
+    {:ok, port} = :inet.port(listen_socket)
+
+    pid =
+      spawn_link(fn ->
+        {:ok, socket} = :gen_tcp.accept(listen_socket)
+        {:ok, request} = :gen_tcp.recv(socket, 0, 1_000)
+        key = extract_ws_key(request)
+        accept = ws_accept(key)
+
+        response =
+          "HTTP/1.1 101 Switching Protocols\r\n" <>
+            "Upgrade: websocket\r\n" <>
+            "Connection: Upgrade\r\n" <>
+            "Sec-WebSocket-Accept: #{accept}\r\n\r\n"
+
+        :ok = :gen_tcp.send(socket, response)
+        Process.sleep(1_000)
+        :gen_tcp.close(socket)
+        :gen_tcp.close(listen_socket)
+      end)
+
+    {pid, port}
+  end
+
+  defp extract_ws_key(request) do
+    request
+    |> String.split("\r\n")
+    |> Enum.find_value(fn line ->
+      case String.split(line, ": ", parts: 2) do
+        ["Sec-WebSocket-Key", key] -> key
+        _other -> nil
+      end
+    end)
+  end
+
+  defp ws_accept(key) do
+    :crypto.hash(:sha, key <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+    |> Base.encode64()
   end
 end

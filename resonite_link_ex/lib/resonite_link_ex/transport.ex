@@ -28,11 +28,11 @@ defmodule ResoniteLinkEx.Transport do
   """
   @spec send_json(pid(), map()) :: :ok | {:error, :invalid_request}
   def send_json(transport_pid, payload) when is_pid(transport_pid) and is_map(payload) do
-    case encode_outbound(payload) do
+    case Jason.encode(payload) do
       {:ok, json} ->
         WebSockex.cast(transport_pid, {:send_text, json})
 
-      {:error, :invalid_request} ->
+      {:error, _reason} ->
         {:error, :invalid_request}
     end
   end
@@ -97,6 +97,9 @@ defmodule ResoniteLinkEx.Transport do
   end
 
   @impl true
+  @doc """
+  内部キャストを受け取り、初期要求または任意テキスト送信を処理する。
+  """
   def handle_cast(:send_initial_session_request, state) do
     {:ok, request} = Protocol.encode_request("requestSessionData", %{})
     _ = Client.register_pending(state.client_pid, request["messageId"], self())
