@@ -8,7 +8,7 @@ defmodule ResoniteLinkEx.Transport do
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Protocol
 
-  @default_host "host.docker.internal"
+  @default_host "localhost"
   @default_port 12_512
   @default_path ""
 

@@ -16,5 +16,5 @@ Resonite を Elixir から外部操作するための設計ドキュメントを
 実装コードは今後追加予定です。現時点では設計ドキュメントを主対象としています。
 
 ## 実行手順
-- Docker内での品質ゲート実行手順は `.codex/skills/elixir-quality-gate/SKILL.md` を参照する。
+- ホスト実行での品質ゲート手順は `.codex/skills/elixir-quality-gate/SKILL.md` を参照する。
 - コミット前チェック手順は `.codex/skills/commit-gate-jp/SKILL.md` を参照する。
