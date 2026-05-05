@@ -33,7 +33,7 @@ cd resonite_link_ex && mix local.hex --force && mix local.rebar --force && mix d
 
 ## スプリント1実行手順
 
-ルートの `スプリント1実行手順.md` を参照してください。
+`docs/sprint1/スプリント1実行手順.md` を参照してください。
 
 ## サンプル実行（赤い正方形）
 
