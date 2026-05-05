@@ -89,3 +89,39 @@
 ### 今回症状との対応づけ（非公式情報ベース）
 - `404` は「対象エンドポイント不一致」の典型で、上記チェックリストと整合。
 - 特に `Web Hosts` の Denied、`User` 不一致、古いポート固定は再現原因になり得る。
+
+## 追加調査: なぜ `localhost` で動き `127.0.0.1` で動かないのか
+### 公式リポジトリ（ResoniteLink）から確認できた事実
+1. REPL 実装は、数値ポート入力時に接続先を `ws://localhost:{port}` で組み立てる。
+   - `ResoniteLink.REPL/Program.cs`:
+     - `targetUrl = new Uri($"ws://localhost:{port}");`
+2. `LinkInterface` は、受け取った `Uri` をそのまま `ClientWebSocket.ConnectAsync` へ渡す。
+   - `ResoniteLink/LinkInterface.cs`:
+     - `await _client.ConnectAsync(target, cancellation.Token);`
+3. setup ドキュメントは「表示ポートへ接続」と記載し、`127.0.0.1` 必須/禁止の明記はない。
+   - `docs/docs/setup.md`
+
+### 解釈（本調査の結論）
+- ResoniteLink ライブラリ側に「`127.0.0.1` を拒否し `localhost` のみ許可する」明示実装は確認できない。
+- 一方で公式 REPL は `localhost` 前提で URL を組むため、**運用上は `localhost` 優先が実質標準**と判断できる。
+- 実機で `localhost` は成功・`127.0.0.1` は失敗したことから、差異は Resonite 本体側（FrooxEngine 側）または実行環境側
+  （Host ヘッダー制約、IPv4/IPv6 解決差など）にある可能性が高い。
+
+### 参考（周辺技術情報）
+- ASP.NET Core/Kestrel の Host Filtering の考え方:
+  - https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/host-filtering?view=aspnetcore-10.0
+
+### 本PJでの運用決定（確定）
+- ResoniteLink 接続時のホストは `localhost` 固定。
+- `127.0.0.1` は使用禁止。
+- Docker 接続検証は行わず、ホスト実行で検証する。
+
+## 補足: なぜ `127.0.0.1` で「接続失敗」ではなく `404` になるのか
+- `404 Not Found` は、TCPレベルでは接続先プロセスに到達していることを示す。
+  - 到達できていない場合は通常 `connection refused` / `timeout` になる。
+- 今回の挙動は以下の整理になる。
+  1. `127.0.0.1:port` に TCP/HTTP 到達はしている
+  2. ただし WebSocket の対象エンドポイント条件（Host など）に一致しない
+  3. その結果、アプリ層で `404` が返る
+- 実測でも `localhost` は成功し、`127.0.0.1` は `404` だったため、ネットワーク未到達ではなく
+  **アプリ層のルーティング/ホスト判定差** が原因と判断する。
