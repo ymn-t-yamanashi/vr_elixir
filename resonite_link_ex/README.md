@@ -31,9 +31,9 @@ cd resonite_link_ex && mix local.hex --force && mix local.rebar --force && mix d
 - `mix test` は Resonite 未起動でも実行できる（実機接続不要）。
 - 実機接続が必要な検証は `@tag integration: true` を付け、`mix test --only integration` でのみ実行する。
 
-## フェイズ1実行手順
+## スプリント1実行手順
 
-ルートの `フェイズ1実行手順.md` を参照してください。
+ルートの `スプリント1実行手順.md` を参照してください。
 
 ## サンプル実行（赤い正方形）
 
