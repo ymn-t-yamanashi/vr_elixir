@@ -28,4 +28,20 @@ defmodule ResoniteLinkExTest do
 
     assert is_binary(ids.slot_id)
   end
+
+  test "find_resonite_link_port/1 は PortDiscovery へ委譲する" do
+    output =
+      "LISTEN 0      500        127.0.0.1:55555      0.0.0.0:*    users:((\"dotnet\",pid=1,fd=1))"
+
+    fake_cmd = fn "ss", ["-ltnp"] -> {output, 0} end
+
+    assert {:ok, 55_555} = ResoniteLinkEx.find_resonite_link_port(fake_cmd)
+  end
+
+  test "find_resonite_link_port/0 は結果タプルを返す" do
+    result = ResoniteLinkEx.find_resonite_link_port()
+    assert is_tuple(result)
+    assert tuple_size(result) == 2
+    assert elem(result, 0) in [:ok, :error]
+  end
 end

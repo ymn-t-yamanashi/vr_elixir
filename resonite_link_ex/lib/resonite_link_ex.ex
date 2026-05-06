@@ -4,6 +4,7 @@ defmodule ResoniteLinkEx do
   """
 
   alias ResoniteLinkEx.Client
+  alias ResoniteLinkEx.PortDiscovery
   alias ResoniteLinkEx.Shapes
 
   @doc """
@@ -30,4 +31,25 @@ defmodule ResoniteLinkEx do
   """
   @spec spawn_shape(pid(), atom(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_shape(transport_pid, shape, opts), do: Shapes.spawn_shape(transport_pid, shape, opts)
+
+  @doc """
+  ResoniteLink の待受ポートを検出する。
+  """
+  @spec find_resonite_link_port() ::
+          {:ok, pos_integer()}
+          | {:error, :ss_not_found}
+          | {:error, :command_failed}
+          | {:error, :port_not_found}
+  def find_resonite_link_port, do: PortDiscovery.find_resonite_link_port()
+
+  @doc """
+  テストや拡張用途向けに、コマンド実行関数を差し替えてポート検出する。
+  """
+  @spec find_resonite_link_port((String.t(), [String.t()] -> {String.t(), non_neg_integer()})) ::
+          {:ok, pos_integer()}
+          | {:error, :invalid_request}
+          | {:error, :ss_not_found}
+          | {:error, :command_failed}
+          | {:error, :port_not_found}
+  def find_resonite_link_port(cmd_fun), do: PortDiscovery.find_resonite_link_port(cmd_fun)
 end
