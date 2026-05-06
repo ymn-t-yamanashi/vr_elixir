@@ -1,7 +1,7 @@
 # 共通name解決API（スプリント3）
 
 ## 目的
-- `name` 指定の移動・削除APIで共通に使う `name -> slot_id` 解決処理を1か所に集約する。
+- `name` 指定の座標移動（位置更新）・削除APIで共通に使う `name -> slot_id` 解決処理を1か所に集約する。
 - 各APIで解決ロジックを重複実装しない。
 
 ## 公開I/F
@@ -22,7 +22,7 @@
 
 ## getSlot前提
 - 本スプリントでは `getSlot` を前提に、対象Slot情報の取得・検証を行う。
-- 解決済み `slot_id` で移動時は `updateSlot`、削除時は `removeSlot` を呼び出す。
+- 解決済み `slot_id` で座標移動（位置更新）時は `updateSlot`、削除時は `removeSlot` を呼び出す。
 - `getSlot` は新規の特別実装にせず、既存関数（例: `addSlot` / `updateSlot` / `removeSlot`）と同じ実装レベルで扱う。
   - 具体的には `Protocol` の type許可・payload検証、`Scene` の対応コマンド、公開API、単体テストを同粒度でそろえる。
 
