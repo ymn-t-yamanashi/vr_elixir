@@ -75,4 +75,53 @@ defmodule ResoniteLinkEx.NameResolverTest do
                get_slot_fun: fn _, _ -> {:ok, %{}} end
              )
   end
+
+  test "resolve_slot_id/3 は不正な slot 要素を除外し not_found を返す" do
+    find_slots_fun = fn _client, _name, _opts ->
+      {:ok, [%{slot_id: "slot_a"}, %{name: "CubeA"}, %{slot_id: 1, name: "CubeA"}]}
+    end
+
+    assert {:error, :not_found} =
+             NameResolver.resolve_slot_id(:client, "CubeA", find_slots_fun: find_slots_fun)
+  end
+
+  test "resolve_slot_id/3 は parent_name で絞り込み不可なら not_found を返す" do
+    slots = [
+      %{slot_id: "slot_a", name: "CubeA", parent_name: "ParentA"},
+      %{slot_id: "slot_b", name: "CubeA", parent_name: "ParentB"}
+    ]
+
+    find_slots_fun = fn _client, _name, _opts -> {:ok, slots} end
+
+    assert {:error, :not_found} =
+             NameResolver.resolve_slot_id(:client, "CubeA",
+               parent_name: "ParentC",
+               find_slots_fun: find_slots_fun
+             )
+  end
+
+  test "resolve_slot_id/3 は parent_name 絞り込み後も複数なら ambiguous_name を返す" do
+    slots = [
+      %{slot_id: "slot_a", name: "CubeA", parent_name: "ParentA"},
+      %{slot_id: "slot_b", name: "CubeA", parent_name: "ParentA"}
+    ]
+
+    find_slots_fun = fn _client, _name, _opts -> {:ok, slots} end
+
+    assert {:error, :ambiguous_name} =
+             NameResolver.resolve_slot_id(:client, "CubeA",
+               parent_name: "ParentA",
+               find_slots_fun: find_slots_fun
+             )
+  end
+
+  test "resolve_slot_id/3 は get_slot_fun が2引数関数でない場合 invalid_request を返す" do
+    find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
+
+    assert {:error, :invalid_request} =
+             NameResolver.resolve_slot_id(:client, "CubeA",
+               find_slots_fun: find_slots_fun,
+               get_slot_fun: fn _slot_id -> {:ok, %{}} end
+             )
+  end
 end
