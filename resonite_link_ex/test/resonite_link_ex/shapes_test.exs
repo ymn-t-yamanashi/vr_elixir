@@ -103,6 +103,20 @@ defmodule ResoniteLinkEx.ShapesTest do
                Shapes.spawn_shape(self(), :cube, name: "CubeA", send_fun: send_fun)
     end
 
+    test "client_pid 指定時は pending へ登録する" do
+      assert {:ok, client} = ResoniteLinkEx.start_client()
+      send_fun = fn _transport_pid, _payload -> :ok end
+
+      assert {:ok, _ids} =
+               Shapes.spawn_shape(self(), :cube,
+                 name: "CubeA",
+                 send_fun: send_fun,
+                 client_pid: client
+               )
+
+      assert 6 = ResoniteLinkEx.Client.pending_count(client)
+    end
+
     test "不正引数で invalid_request を返す" do
       assert {:error, :invalid_request} = Shapes.spawn_shape(:not_pid, :cube, name: "CubeA")
       assert {:error, :invalid_request} = Shapes.spawn_shape(self(), :unknown, name: "CubeA")
@@ -112,6 +126,9 @@ defmodule ResoniteLinkEx.ShapesTest do
                Shapes.spawn_shape(self(), :cube, name: "CubeA", send_fun: :bad)
 
       assert {:error, :invalid_request} = Shapes.spawn_shape(self(), :cube, :not_list)
+
+      assert {:error, :invalid_request} =
+               Shapes.spawn_shape(self(), :cube, name: "CubeA", client_pid: :bad)
     end
   end
 

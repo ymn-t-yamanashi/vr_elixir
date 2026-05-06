@@ -3,6 +3,7 @@ defmodule ResoniteLinkEx.Shapes do
   基本図形生成のメッセージ組み立てと送信を行うモジュール。
   """
 
+  alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Transport
 
   @invalid_request {:error, :invalid_request}
@@ -57,10 +58,12 @@ defmodule ResoniteLinkEx.Shapes do
   def spawn_shape(transport_pid, shape, opts)
       when is_pid(transport_pid) and is_atom(shape) and is_list(opts) do
     send_fun = Keyword.get(opts, :send_fun, &Transport.send_json/2)
+    client_pid = Keyword.get(opts, :client_pid)
 
     with true <- is_function(send_fun, 2),
+         true <- is_nil(client_pid) or is_pid(client_pid),
          {:ok, %{ids: ids, messages: messages}} <- build_messages(shape, opts),
-         :ok <- send_all(transport_pid, messages, send_fun) do
+         :ok <- send_all(transport_pid, messages, send_fun, client_pid) do
       {:ok, ids}
     else
       false -> @invalid_request
@@ -112,15 +115,23 @@ defmodule ResoniteLinkEx.Shapes do
   @spec spawn_grid(pid(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_grid(transport_pid, opts), do: spawn_shape(transport_pid, :grid, opts)
 
-  defp send_all(_transport_pid, [], _send_fun), do: :ok
+  defp send_all(_transport_pid, [], _send_fun, _client_pid), do: :ok
 
-  defp send_all(transport_pid, [message | rest], send_fun) do
+  defp send_all(transport_pid, [message | rest], send_fun, client_pid) do
     message_with_id = Map.put(message, "messageId", UUID.uuid4())
 
-    case send_fun.(transport_pid, message_with_id) do
-      :ok -> send_all(transport_pid, rest, send_fun)
+    with :ok <- register_pending_if_needed(client_pid, message_with_id["messageId"]),
+         :ok <- send_fun.(transport_pid, message_with_id) do
+      send_all(transport_pid, rest, send_fun, client_pid)
+    else
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp register_pending_if_needed(nil, _message_id), do: :ok
+
+  defp register_pending_if_needed(client_pid, message_id) when is_pid(client_pid) do
+    Client.register_pending(client_pid, message_id, self())
   end
 
   defp parse_opts(opts) do

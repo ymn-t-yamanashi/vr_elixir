@@ -24,6 +24,7 @@ defmodule Sprint2ShapesSample do
 
     # 4) 7図形を順番に生成する
     Shapes.spawn_quad(transport,
+      client_pid: client,
       name: "Sprint2Quad",
       parent_id: "Root",
       position: %{"x" => -1.8, "y" => 1.4, "z" => 0.5},
@@ -33,6 +34,7 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:quad)
 
     Shapes.spawn_cube(transport,
+      client_pid: client,
       name: "Sprint2Cube",
       parent_id: "Root",
       position: %{"x" => -1.2, "y" => 1.4, "z" => 0.5},
@@ -42,6 +44,7 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:cube)
 
     Shapes.spawn_sphere(transport,
+      client_pid: client,
       name: "Sprint2Sphere",
       parent_id: "Root",
       position: %{"x" => -0.6, "y" => 1.4, "z" => 0.5},
@@ -51,6 +54,7 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:sphere)
 
     Shapes.spawn_cylinder(transport,
+      client_pid: client,
       name: "Sprint2Cylinder",
       parent_id: "Root",
       position: %{"x" => 0.0, "y" => 1.4, "z" => 0.5},
@@ -60,6 +64,7 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:cylinder)
 
     Shapes.spawn_capsule(transport,
+      client_pid: client,
       name: "Sprint2Capsule",
       parent_id: "Root",
       position: %{"x" => 0.6, "y" => 1.4, "z" => 0.5},
@@ -69,6 +74,7 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:capsule)
 
     Shapes.spawn_ring(transport,
+      client_pid: client,
       name: "Sprint2Ring",
       parent_id: "Root",
       position: %{"x" => 1.2, "y" => 1.4, "z" => 0.5},
@@ -78,6 +84,7 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:ring)
 
     Shapes.spawn_grid(transport,
+      client_pid: client,
       name: "Sprint2Grid",
       parent_id: "Root",
       position: %{"x" => 1.8, "y" => 1.4, "z" => 0.5},
@@ -118,7 +125,7 @@ defmodule Sprint2ShapesSample do
     case cleaned do
       ["--port", port_text | _rest] -> parse_port_value(port_text)
       [port_text | _rest] -> parse_port_value(port_text)
-      [] -> raise("ポート指定は必須です。例: mix run examples/sprint2_shapes_sample.exs -- --port 9341")
+      [] -> detect_port!()
     end
   end
 
@@ -126,6 +133,23 @@ defmodule Sprint2ShapesSample do
     case Integer.parse(port_text) do
       {port, ""} when port > 0 and port <= 65_535 -> port
       _ -> raise "ポート指定が不正です。1-65535 の整数を指定してください。例: --port 9341"
+    end
+  end
+
+  defp detect_port! do
+    case ResoniteLinkEx.find_resonite_link_port() do
+      {:ok, port} ->
+        IO.puts("ポート自動検出: #{port}")
+        port
+
+      {:error, :port_not_found} ->
+        raise """
+        ポートを自動検出できませんでした。
+        ResoniteLinkを有効化するか、--port で明示指定してください。
+        """
+
+      {:error, reason} ->
+        raise "ポート検出に失敗しました: #{inspect(reason)}"
     end
   end
 end
