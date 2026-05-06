@@ -77,6 +77,22 @@ defmodule ResoniteLinkEx.TransportTest do
     assert {:error, :invalid_request} = Transport.send_json(self(), :not_map)
   end
 
+  test "client_pid/1 はトランスポートから client pid を取得できる" do
+    {server_pid, port} = start_ws_mock_server()
+    assert {:ok, client} = Client.start_link([])
+
+    assert {:ok, transport} =
+             Transport.start_link(client, host: "localhost", port: port, path: "")
+
+    assert {:ok, ^client} = Transport.client_pid(transport)
+    Process.exit(transport, :normal)
+    Process.exit(server_pid, :normal)
+  end
+
+  test "client_pid/1 は不正引数で invalid_request を返す" do
+    assert {:error, :invalid_request} = Transport.client_pid(:not_pid)
+  end
+
   test "send_json/2 は有効payloadを送信できる" do
     {server_pid, port} = start_ws_mock_server()
     assert {:ok, client} = Client.start_link([])

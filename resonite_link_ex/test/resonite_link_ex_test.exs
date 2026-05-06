@@ -24,7 +24,11 @@ defmodule ResoniteLinkExTest do
     send_fun = fn _transport_pid, _payload -> :ok end
 
     assert {:ok, ids} =
-             ResoniteLinkEx.spawn_shape(self(), :quad, name: "QuadA", send_fun: send_fun)
+             ResoniteLinkEx.spawn_shape(self(), :quad,
+               name: "QuadA",
+               send_fun: send_fun,
+               client_pid: nil
+             )
 
     assert is_binary(ids.slot_id)
   end

@@ -24,6 +24,25 @@ defmodule ResoniteLinkEx.Transport do
   def start_link(_client_pid, _opts), do: {:error, :invalid_request}
 
   @doc """
+  トランスポートに紐づく client_pid を返す。
+  """
+  @spec client_pid(pid()) :: {:ok, pid()} | {:error, :invalid_request}
+  def client_pid(transport_pid) when transport_pid == self(), do: {:error, :invalid_request}
+
+  def client_pid(transport_pid) when is_pid(transport_pid) do
+    if Process.alive?(transport_pid) do
+      case :sys.get_state(transport_pid) do
+        %{client_pid: client_pid} when is_pid(client_pid) -> {:ok, client_pid}
+        _other -> {:error, :invalid_request}
+      end
+    else
+      {:error, :invalid_request}
+    end
+  end
+
+  def client_pid(_transport_pid), do: {:error, :invalid_request}
+
+  @doc """
   map ペイロードを JSON として送信する。
   """
   @spec send_json(pid(), map()) :: :ok | {:error, :invalid_request}

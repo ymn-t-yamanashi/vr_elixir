@@ -24,7 +24,6 @@ defmodule Sprint2ShapesSample do
 
     # 4) 7図形を順番に生成する
     Shapes.spawn_quad(transport,
-      client_pid: client,
       name: "Sprint2Quad",
       parent_id: "Root",
       position: %{"x" => -1.8, "y" => 1.4, "z" => 0.5},
@@ -34,7 +33,6 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:quad)
 
     Shapes.spawn_cube(transport,
-      client_pid: client,
       name: "Sprint2Cube",
       parent_id: "Root",
       position: %{"x" => -1.2, "y" => 1.4, "z" => 0.5},
@@ -44,7 +42,6 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:cube)
 
     Shapes.spawn_sphere(transport,
-      client_pid: client,
       name: "Sprint2Sphere",
       parent_id: "Root",
       position: %{"x" => -0.6, "y" => 1.4, "z" => 0.5},
@@ -54,7 +51,6 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:sphere)
 
     Shapes.spawn_cylinder(transport,
-      client_pid: client,
       name: "Sprint2Cylinder",
       parent_id: "Root",
       position: %{"x" => 0.0, "y" => 1.4, "z" => 0.5},
@@ -64,7 +60,6 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:cylinder)
 
     Shapes.spawn_capsule(transport,
-      client_pid: client,
       name: "Sprint2Capsule",
       parent_id: "Root",
       position: %{"x" => 0.6, "y" => 1.4, "z" => 0.5},
@@ -74,7 +69,6 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:capsule)
 
     Shapes.spawn_ring(transport,
-      client_pid: client,
       name: "Sprint2Ring",
       parent_id: "Root",
       position: %{"x" => 1.2, "y" => 1.4, "z" => 0.5},
@@ -84,7 +78,6 @@ defmodule Sprint2ShapesSample do
     |> handle_spawn_result!(:ring)
 
     Shapes.spawn_grid(transport,
-      client_pid: client,
       name: "Sprint2Grid",
       parent_id: "Root",
       position: %{"x" => 1.8, "y" => 1.4, "z" => 0.5},

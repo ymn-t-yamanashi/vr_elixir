@@ -84,7 +84,11 @@ defmodule ResoniteLinkEx.ShapesTest do
       end
 
       assert {:ok, ids} =
-               Shapes.spawn_shape(self(), :cube, name: "CubeA", send_fun: send_fun)
+               Shapes.spawn_shape(self(), :cube,
+                 name: "CubeA",
+                 send_fun: send_fun,
+                 client_pid: nil
+               )
 
       assert is_binary(ids.slot_id)
       assert_receive {:payload, %{"$type" => "addSlot", "messageId" => message_id}}
@@ -100,7 +104,11 @@ defmodule ResoniteLinkEx.ShapesTest do
       send_fun = fn _transport_pid, _payload -> {:error, :transport_error} end
 
       assert {:error, :transport_error} =
-               Shapes.spawn_shape(self(), :cube, name: "CubeA", send_fun: send_fun)
+               Shapes.spawn_shape(self(), :cube,
+                 name: "CubeA",
+                 send_fun: send_fun,
+                 client_pid: nil
+               )
     end
 
     test "client_pid 指定時は pending へ登録する" do
@@ -120,10 +128,12 @@ defmodule ResoniteLinkEx.ShapesTest do
     test "不正引数で invalid_request を返す" do
       assert {:error, :invalid_request} = Shapes.spawn_shape(:not_pid, :cube, name: "CubeA")
       assert {:error, :invalid_request} = Shapes.spawn_shape(self(), :unknown, name: "CubeA")
-      assert {:error, :invalid_request} = Shapes.spawn_shape(self(), :cube, name: "")
 
       assert {:error, :invalid_request} =
-               Shapes.spawn_shape(self(), :cube, name: "CubeA", send_fun: :bad)
+               Shapes.spawn_shape(self(), :cube, name: "", client_pid: nil)
+
+      assert {:error, :invalid_request} =
+               Shapes.spawn_shape(self(), :cube, name: "CubeA", send_fun: :bad, client_pid: nil)
 
       assert {:error, :invalid_request} = Shapes.spawn_shape(self(), :cube, :not_list)
 
@@ -135,7 +145,7 @@ defmodule ResoniteLinkEx.ShapesTest do
   describe "shortcut API" do
     test "各ショートカットが spawn_shape/3 と同じ結果形式を返す" do
       send_fun = fn _transport_pid, _payload -> :ok end
-      opts = [name: "ShapeA", send_fun: send_fun]
+      opts = [name: "ShapeA", send_fun: send_fun, client_pid: nil]
 
       assert {:ok, _ids} = Shapes.spawn_quad(self(), opts)
       assert {:ok, _ids} = Shapes.spawn_cube(self(), opts)
