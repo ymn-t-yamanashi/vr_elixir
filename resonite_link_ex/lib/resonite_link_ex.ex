@@ -4,6 +4,7 @@ defmodule ResoniteLinkEx do
   """
 
   alias ResoniteLinkEx.Client
+  alias ResoniteLinkEx.Shapes
 
   @doc """
   クライアントを起動する。
@@ -23,4 +24,10 @@ defmodule ResoniteLinkEx do
   @spec receive_response(pid(), map()) ::
           :ok | {:error, :decode_error} | {:error, :invalid_request}
   def receive_response(client, response), do: Client.receive_response(client, response)
+
+  @doc """
+  図形生成メッセージを送信する。
+  """
+  @spec spawn_shape(pid(), atom(), keyword()) :: {:ok, map()} | {:error, term()}
+  def spawn_shape(transport_pid, shape, opts), do: Shapes.spawn_shape(transport_pid, shape, opts)
 end

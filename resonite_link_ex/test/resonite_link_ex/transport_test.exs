@@ -63,7 +63,10 @@ defmodule ResoniteLinkEx.TransportTest do
   test "start_link/2 はローカルWSサーバーへ接続できる" do
     {server_pid, port} = start_ws_mock_server()
     assert {:ok, client} = Client.start_link([])
-    assert {:ok, transport} = Transport.start_link(client, host: "localhost", port: port, path: "")
+
+    assert {:ok, transport} =
+             Transport.start_link(client, host: "localhost", port: port, path: "")
+
     assert is_pid(transport)
     Process.exit(transport, :normal)
     Process.exit(server_pid, :normal)
@@ -77,7 +80,10 @@ defmodule ResoniteLinkEx.TransportTest do
   test "send_json/2 は有効payloadを送信できる" do
     {server_pid, port} = start_ws_mock_server()
     assert {:ok, client} = Client.start_link([])
-    assert {:ok, transport} = Transport.start_link(client, host: "localhost", port: port, path: "")
+
+    assert {:ok, transport} =
+             Transport.start_link(client, host: "localhost", port: port, path: "")
+
     assert :ok = Transport.send_json(transport, %{"$type" => "requestSessionData", "data" => %{}})
     Process.exit(transport, :normal)
     Process.exit(server_pid, :normal)
@@ -86,7 +92,10 @@ defmodule ResoniteLinkEx.TransportTest do
   test "send_json/2 はJSON化できないpayloadで invalid_request を返す" do
     {server_pid, port} = start_ws_mock_server()
     assert {:ok, client} = Client.start_link([])
-    assert {:ok, transport} = Transport.start_link(client, host: "localhost", port: port, path: "")
+
+    assert {:ok, transport} =
+             Transport.start_link(client, host: "localhost", port: port, path: "")
+
     assert {:error, :invalid_request} = Transport.send_json(transport, %{"bad" => self()})
     Process.exit(transport, :normal)
     Process.exit(server_pid, :normal)
@@ -123,7 +132,9 @@ defmodule ResoniteLinkEx.TransportTest do
   test "handle_cast/2 は send_text をそのまま text frame で返す" do
     assert {:ok, client} = Client.start_link([])
     state = %{client_pid: client, opts: []}
-    assert {:reply, {:text, "hello"}, ^state} = Transport.handle_cast({:send_text, "hello"}, state)
+
+    assert {:reply, {:text, "hello"}, ^state} =
+             Transport.handle_cast({:send_text, "hello"}, state)
   end
 
   test "handle_frame/2 は text JSON を Client へ連携する" do

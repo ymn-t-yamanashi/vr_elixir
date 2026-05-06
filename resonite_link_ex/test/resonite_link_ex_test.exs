@@ -19,4 +19,13 @@ defmodule ResoniteLinkExTest do
   test "receive_response/2 は不正引数で invalid_request を返す" do
     assert {:error, :invalid_request} = ResoniteLinkEx.receive_response(:not_pid, %{})
   end
+
+  test "spawn_shape/3 は Shapes.spawn_shape/3 を委譲する" do
+    send_fun = fn _transport_pid, _payload -> :ok end
+
+    assert {:ok, ids} =
+             ResoniteLinkEx.spawn_shape(self(), :quad, name: "QuadA", send_fun: send_fun)
+
+    assert is_binary(ids.slot_id)
+  end
 end
