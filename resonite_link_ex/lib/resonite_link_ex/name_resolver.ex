@@ -93,11 +93,8 @@ defmodule ResoniteLinkEx.NameResolver do
         request = %{"messageId" => UUID.uuid4(), "$type" => "getSlot", "slotId" => slot_id}
 
         with :ok <- Client.register_pending(client_pid, request["messageId"], self()),
-             :ok <- Transport.send_json(client_or_transport, request) do
-          {:ok, request}
-        else
-          {:error, reason} -> {:error, reason}
-        end
+             :ok <- Transport.send_json(client_or_transport, request),
+             do: {:ok, request}
 
       {:error, :invalid_request} ->
         Client.call(client_or_transport, "getSlot", %{slot_id: slot_id})

@@ -135,6 +135,41 @@ defmodule ResoniteLinkEx.ProtocolTest do
              Protocol.encode_transport_request("getSlot", %{slot_id: "SlotA"})
   end
 
+  test "encode_transport_request/2 は addSlot/addComponent/updateComponent/removeComponent を変換する" do
+    assert {:ok, %{"$type" => "addSlot", "data" => %{"parentId" => "Root", name: "BoxA"}}} =
+             Protocol.encode_transport_request("addSlot", %{parent_id: "Root", name: "BoxA"})
+
+    assert {:ok,
+            %{
+              "$type" => "addComponent",
+              "data" => %{"slotId" => "SlotA", "componentType" => "Comp"}
+            }} =
+             Protocol.encode_transport_request("addComponent", %{
+               slot_id: "SlotA",
+               component_type: "Comp"
+             })
+
+    assert {:ok,
+            %{"$type" => "updateComponent", "data" => %{"componentId" => "CompA", members: %{}}}} =
+             Protocol.encode_transport_request("updateComponent", %{
+               component_id: "CompA",
+               members: %{}
+             })
+
+    assert {:ok, %{"$type" => "removeComponent", "data" => %{"componentId" => "CompA"}}} =
+             Protocol.encode_transport_request("removeComponent", %{component_id: "CompA"})
+  end
+
+  test "encode_transport_request/2 は requestSessionData で payload をそのまま返す" do
+    assert {:ok, %{"$type" => "requestSessionData", "data" => %{}}} =
+             Protocol.encode_transport_request("requestSessionData", %{})
+  end
+
+  test "encode_transport_request/2 は addSlot の parent_id=nil を parentId=nil へ変換する" do
+    assert {:ok, %{"$type" => "addSlot", "data" => %{name: "BoxA"}}} =
+             Protocol.encode_transport_request("addSlot", %{parent_id: nil, name: "BoxA"})
+  end
+
   test "decode_response/1 は messageId を含む map を ok で返す" do
     response = %{"messageId" => "f47ac10b-58cc-4372-a567-0e02b2c3d479", "status" => "ok"}
     assert {:ok, ^response} = Protocol.decode_response(response)
