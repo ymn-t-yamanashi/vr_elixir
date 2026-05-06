@@ -22,7 +22,7 @@ defmodule ResoniteLinkEx.ShapesTest do
   end
 
   describe "build_messages/2" do
-    test "有効入力で6メッセージを返す" do
+    test "有効入力で既定親作成を含む7メッセージを返す" do
       assert {:ok, %{ids: ids, messages: messages}} =
                Shapes.build_messages(:quad, name: "SampleQuad")
 
@@ -30,12 +30,24 @@ defmodule ResoniteLinkEx.ShapesTest do
       assert is_binary(ids.mesh_id)
       assert is_binary(ids.material_id)
       assert is_binary(ids.renderer_id)
-      assert length(messages) == 6
+      assert length(messages) == 7
 
-      [add_slot, add_mesh | _] = messages
+      [add_default_parent, add_slot, add_mesh | _] = messages
+      assert add_default_parent["$type"] == "addSlot"
+      assert add_default_parent["data"]["name"]["value"] == "ResoniteLinkEx"
+      assert add_default_parent["data"]["id"] == "parent_resonitelinkex"
       assert add_slot["$type"] == "addSlot"
       assert add_mesh["$type"] == "addComponent"
       assert add_mesh["data"]["componentType"] == "[FrooxEngine]FrooxEngine.QuadMesh"
+    end
+
+    test "parent_name 指定時は指定名を親として使い親自動生成はしない" do
+      assert {:ok, %{messages: messages}} =
+               Shapes.build_messages(:cube, name: "CubeA", parent_name: "CustomParent")
+
+      assert length(messages) == 6
+      [add_slot | _] = messages
+      assert add_slot["data"]["parent"]["targetId"] == "parent_customparent"
     end
 
     test "必須name欠落で invalid_request を返す" do
@@ -95,6 +107,7 @@ defmodule ResoniteLinkEx.ShapesTest do
       assert is_binary(ids.slot_id)
       assert_receive {:payload, %{"$type" => "addSlot", "messageId" => message_id}}
       assert is_binary(message_id)
+      assert_receive {:payload, %{"$type" => "addSlot"}}
       assert_receive {:payload, %{"$type" => "addComponent"}}
       assert_receive {:payload, %{"$type" => "addComponent"}}
       assert_receive {:payload, %{"$type" => "addComponent"}}
@@ -124,7 +137,7 @@ defmodule ResoniteLinkEx.ShapesTest do
                  client_pid: client
                )
 
-      assert 6 = ResoniteLinkEx.Client.pending_count(client)
+      assert 7 = ResoniteLinkEx.Client.pending_count(client)
     end
 
     test "client_pid 未指定時は transport から自動解決して pending へ登録する" do
@@ -142,7 +155,7 @@ defmodule ResoniteLinkEx.ShapesTest do
                  send_fun: send_fun
                )
 
-      assert 7 = Client.pending_count(client)
+      assert 8 = Client.pending_count(client)
       Process.exit(transport, :normal)
       Process.exit(server_pid, :normal)
     end

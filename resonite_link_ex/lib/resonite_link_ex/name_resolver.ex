@@ -3,7 +3,8 @@ defmodule ResoniteLinkEx.NameResolver do
   `name` から `slot_id` を解決する共通モジュール。
   """
 
-  alias ResoniteLinkEx.Scene
+  alias ResoniteLinkEx.Client
+  alias ResoniteLinkEx.Transport
 
   @invalid_request {:error, :invalid_request}
 
@@ -87,6 +88,19 @@ defmodule ResoniteLinkEx.NameResolver do
   end
 
   defp default_get_slot(client_or_transport, slot_id) do
-    Scene.call(client_or_transport, "getSlot", %{slot_id: slot_id})
+    case Transport.client_pid(client_or_transport) do
+      {:ok, client_pid} ->
+        request = %{"messageId" => UUID.uuid4(), "$type" => "getSlot", "slotId" => slot_id}
+
+        with :ok <- Client.register_pending(client_pid, request["messageId"], self()),
+             :ok <- Transport.send_json(client_or_transport, request) do
+          {:ok, request}
+        else
+          {:error, reason} -> {:error, reason}
+        end
+
+      {:error, :invalid_request} ->
+        Client.call(client_or_transport, "getSlot", %{slot_id: slot_id})
+    end
   end
 end

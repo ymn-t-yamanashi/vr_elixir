@@ -19,7 +19,7 @@ defmodule ResoniteLinkEx.Shapes do
     grid: "[FrooxEngine]FrooxEngine.GridMesh"
   }
 
-  @default_parent_id "Root"
+  @default_parent_name "ResoniteLinkEx"
   @default_position %{"x" => 0, "y" => 1.4, "z" => 0.5}
   @default_scale %{"x" => 0.5, "y" => 0.5, "z" => 0.5}
   @default_color %{"r" => 1, "g" => 1, "b" => 1, "a" => 1}
@@ -34,7 +34,7 @@ defmodule ResoniteLinkEx.Shapes do
   def component_type(_shape), do: @invalid_request
 
   @doc """
-  図形生成に必要な6メッセージを組み立てる。
+  図形生成に必要なメッセージを組み立てる。
   """
   @spec build_messages(atom(), keyword()) ::
           {:ok, %{ids: map(), messages: [map()]}} | {:error, :invalid_request}
@@ -150,11 +150,20 @@ defmodule ResoniteLinkEx.Shapes do
 
   defp parse_opts(opts) do
     with {:ok, name} <- fetch_name(opts),
-         {:ok, parent_id} <- fetch_parent_id(opts),
+         {:ok, parent_info} <- fetch_parent_info(opts),
          {:ok, position} <- fetch_vec3(opts, :position, @default_position),
          {:ok, scale} <- fetch_vec3(opts, :scale, @default_scale),
          {:ok, color} <- fetch_color(opts) do
-      {:ok, %{name: name, parent_id: parent_id, position: position, scale: scale, color: color}}
+      {:ok,
+       %{
+         name: name,
+         parent_id: parent_info.parent_id,
+         parent_name: parent_info.parent_name,
+         ensure_default_parent: parent_info.ensure_default_parent,
+         position: position,
+         scale: scale,
+         color: color
+       }}
     else
       {:error, :invalid_request} -> @invalid_request
     end
@@ -167,10 +176,33 @@ defmodule ResoniteLinkEx.Shapes do
     end
   end
 
-  defp fetch_parent_id(opts) do
-    case Keyword.get(opts, :parent_id, @default_parent_id) do
-      parent_id when is_binary(parent_id) and parent_id != "" -> {:ok, parent_id}
-      _ -> @invalid_request
+  defp fetch_parent_info(opts) do
+    case Keyword.get(opts, :parent_id) do
+      parent_id when is_binary(parent_id) and parent_id != "" ->
+        {:ok, %{parent_id: parent_id, parent_name: nil, ensure_default_parent: false}}
+
+      nil ->
+        fetch_parent_info_by_name(opts)
+
+      _other ->
+        @invalid_request
+    end
+  end
+
+  defp fetch_parent_info_by_name(opts) do
+    case Keyword.get(opts, :parent_name, @default_parent_name) do
+      parent_name when is_binary(parent_name) and parent_name != "" ->
+        normalized = normalize_name(parent_name)
+
+        {:ok,
+         %{
+           parent_id: "parent_#{normalized}",
+           parent_name: parent_name,
+           ensure_default_parent: parent_name == @default_parent_name
+         }}
+
+      _other ->
+        @invalid_request
     end
   end
 
@@ -220,58 +252,82 @@ defmodule ResoniteLinkEx.Shapes do
   end
 
   defp messages_for(ids, opts, mesh_component_type) do
+    parent_messages = build_parent_messages(opts)
+
+    parent_messages ++
+      [
+        %{
+          "$type" => "addSlot",
+          "data" => %{
+            "id" => ids.slot_id,
+            "parent" => %{"$type" => "reference", "targetId" => opts.parent_id},
+            "name" => %{"$type" => "string", "value" => opts.name},
+            "position" => %{"$type" => "float3", "value" => opts.position},
+            "scale" => %{"$type" => "float3", "value" => opts.scale}
+          }
+        },
+        %{
+          "$type" => "addComponent",
+          "containerSlotId" => ids.slot_id,
+          "data" => %{"id" => ids.mesh_id, "componentType" => mesh_component_type}
+        },
+        %{
+          "$type" => "addComponent",
+          "containerSlotId" => ids.slot_id,
+          "data" => %{
+            "id" => ids.material_id,
+            "componentType" => "[FrooxEngine]FrooxEngine.PBS_Metallic"
+          }
+        },
+        %{
+          "$type" => "addComponent",
+          "containerSlotId" => ids.slot_id,
+          "data" => %{
+            "id" => ids.renderer_id,
+            "componentType" => "[FrooxEngine]FrooxEngine.MeshRenderer",
+            "members" => %{"Mesh" => %{"$type" => "reference", "targetId" => ids.mesh_id}}
+          }
+        },
+        %{
+          "$type" => "updateComponent",
+          "data" => %{
+            "id" => ids.renderer_id,
+            "members" => %{
+              "Materials" => %{
+                "$type" => "list",
+                "elements" => [%{"$type" => "reference", "targetId" => ids.material_id}]
+              }
+            }
+          }
+        },
+        %{
+          "$type" => "updateComponent",
+          "data" => %{
+            "id" => ids.material_id,
+            "members" => %{"AlbedoColor" => %{"$type" => "colorX", "value" => opts.color}}
+          }
+        }
+      ]
+  end
+
+  defp build_parent_messages(%{
+         ensure_default_parent: true,
+         parent_id: parent_id,
+         parent_name: parent_name
+       }) do
     [
       %{
         "$type" => "addSlot",
         "data" => %{
-          "id" => ids.slot_id,
-          "parent" => %{"$type" => "reference", "targetId" => opts.parent_id},
-          "name" => %{"$type" => "string", "value" => opts.name},
-          "position" => %{"$type" => "float3", "value" => opts.position},
-          "scale" => %{"$type" => "float3", "value" => opts.scale}
-        }
-      },
-      %{
-        "$type" => "addComponent",
-        "containerSlotId" => ids.slot_id,
-        "data" => %{"id" => ids.mesh_id, "componentType" => mesh_component_type}
-      },
-      %{
-        "$type" => "addComponent",
-        "containerSlotId" => ids.slot_id,
-        "data" => %{
-          "id" => ids.material_id,
-          "componentType" => "[FrooxEngine]FrooxEngine.PBS_Metallic"
-        }
-      },
-      %{
-        "$type" => "addComponent",
-        "containerSlotId" => ids.slot_id,
-        "data" => %{
-          "id" => ids.renderer_id,
-          "componentType" => "[FrooxEngine]FrooxEngine.MeshRenderer",
-          "members" => %{"Mesh" => %{"$type" => "reference", "targetId" => ids.mesh_id}}
-        }
-      },
-      %{
-        "$type" => "updateComponent",
-        "data" => %{
-          "id" => ids.renderer_id,
-          "members" => %{
-            "Materials" => %{
-              "$type" => "list",
-              "elements" => [%{"$type" => "reference", "targetId" => ids.material_id}]
-            }
-          }
-        }
-      },
-      %{
-        "$type" => "updateComponent",
-        "data" => %{
-          "id" => ids.material_id,
-          "members" => %{"AlbedoColor" => %{"$type" => "colorX", "value" => opts.color}}
+          "id" => parent_id,
+          "parent" => %{"$type" => "reference", "targetId" => "Root"},
+          "name" => %{"$type" => "string", "value" => parent_name},
+          "position" => %{"$type" => "float3", "value" => %{"x" => 0, "y" => 0, "z" => 0}},
+          "scale" => %{"$type" => "float3", "value" => %{"x" => 1, "y" => 1, "z" => 1}}
         }
       }
     ]
   end
+
+  defp build_parent_messages(_opts), do: []
 end

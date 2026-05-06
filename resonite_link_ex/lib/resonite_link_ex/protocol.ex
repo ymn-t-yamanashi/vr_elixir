@@ -101,6 +101,16 @@ defmodule ResoniteLinkEx.Protocol do
   end
 
   @doc """
+  送信直前に ResoniteLink 仕様（camelCase）へ変換したリクエスト map を生成する。
+  """
+  @spec encode_transport_request(String.t(), map()) :: {:ok, map()} | {:error, :invalid_request}
+  def encode_transport_request(type, payload) do
+    with {:ok, request} <- encode_request(type, payload) do
+      {:ok, Map.update!(request, "data", &to_transport_payload(type, &1))}
+    end
+  end
+
+  @doc """
   受信レスポンスを検証して返す。
   """
   @spec decode_response(map()) :: {:ok, map()} | {:error, :decode_error}
@@ -122,5 +132,50 @@ defmodule ResoniteLinkEx.Protocol do
 
   defp has_update_slot_field?(payload) do
     Enum.any?([:position, :rotation, :scale, :name], &Map.has_key?(payload, &1))
+  end
+
+  defp to_transport_payload(@type_add_slot, payload) do
+    payload
+    |> rename_key(:parent_id, "parentId")
+  end
+
+  defp to_transport_payload(@type_update_slot, payload) do
+    payload
+    |> rename_key(:slot_id, "slotId")
+  end
+
+  defp to_transport_payload(@type_add_component, payload) do
+    payload
+    |> rename_key(:slot_id, "slotId")
+    |> rename_key(:component_type, "componentType")
+  end
+
+  defp to_transport_payload(@type_update_component, payload) do
+    payload
+    |> rename_key(:component_id, "componentId")
+  end
+
+  defp to_transport_payload(@type_remove_component, payload) do
+    payload
+    |> rename_key(:component_id, "componentId")
+  end
+
+  defp to_transport_payload(@type_remove_slot, payload) do
+    payload
+    |> rename_key(:slot_id, "slotId")
+  end
+
+  defp to_transport_payload(@type_get_slot, payload) do
+    payload
+    |> rename_key(:slot_id, "slotId")
+  end
+
+  defp to_transport_payload(_type, payload), do: payload
+
+  defp rename_key(payload, from_atom, to_string) do
+    case Map.pop(payload, from_atom) do
+      {nil, rest} -> rest
+      {value, rest} -> Map.put(rest, to_string, value)
+    end
   end
 end

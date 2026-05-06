@@ -3,8 +3,9 @@ defmodule ResoniteLinkEx.Objects do
   生成済みオブジェクトの座標移動・削除API。
   """
 
+  alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.NameResolver
-  alias ResoniteLinkEx.Scene
+  alias ResoniteLinkEx.Transport
 
   require Logger
 
@@ -30,7 +31,7 @@ defmodule ResoniteLinkEx.Objects do
   def move_slot_by_name(client_or_transport, name, position, opts) do
     with :ok <- validate_position(position),
          {:ok, slot_id} <- resolve_slot_id(client_or_transport, name, opts) do
-      Scene.call(client_or_transport, "updateSlot", %{slot_id: slot_id, position: position})
+      send_command(client_or_transport, "updateSlot", %{slot_id: slot_id, position: position})
     end
   end
 
@@ -50,7 +51,7 @@ defmodule ResoniteLinkEx.Objects do
 
   def delete_slot_by_name(client_or_transport, name, opts) do
     with {:ok, slot_id} <- resolve_slot_id(client_or_transport, name, opts) do
-      Scene.call(client_or_transport, "removeSlot", %{slot_id: slot_id})
+      send_command(client_or_transport, "removeSlot", %{slot_id: slot_id})
     end
   end
 
@@ -63,7 +64,7 @@ defmodule ResoniteLinkEx.Objects do
     Logger.warning("[deprecated] move_slot/3 は将来削除予定です。move_slot_by_name/4 を利用してください")
 
     with :ok <- validate_position(position) do
-      Scene.call(client_or_transport, "updateSlot", %{slot_id: slot_id, position: position})
+      send_command(client_or_transport, "updateSlot", %{slot_id: slot_id, position: position})
     end
   end
 
@@ -75,7 +76,7 @@ defmodule ResoniteLinkEx.Objects do
   @spec delete_slot(term(), String.t()) :: {:ok, map()} | {:error, term()}
   def delete_slot(client_or_transport, slot_id) when is_binary(slot_id) and slot_id != "" do
     Logger.warning("[deprecated] delete_slot/2 は将来削除予定です。delete_slot_by_name/3 を利用してください")
-    Scene.call(client_or_transport, "removeSlot", %{slot_id: slot_id})
+    send_command(client_or_transport, "removeSlot", %{slot_id: slot_id})
   end
 
   def delete_slot(_client_or_transport, _slot_id), do: @invalid_request
@@ -95,4 +96,41 @@ defmodule ResoniteLinkEx.Objects do
        do: :ok
 
   defp validate_position(_position), do: @invalid_request
+
+  defp send_command(target_pid, type, payload) when is_pid(target_pid) do
+    case Transport.client_pid(target_pid) do
+      {:ok, client_pid} ->
+        with {:ok, request} <- build_transport_request(type, payload),
+             :ok <- Client.register_pending(client_pid, request["messageId"], self()),
+             :ok <- Transport.send_json(target_pid, request) do
+          {:ok, request}
+        else
+          {:error, reason} -> {:error, reason}
+        end
+
+      {:error, :invalid_request} ->
+        Client.call(target_pid, type, payload)
+    end
+  end
+
+  defp send_command(_target_pid, _type, _payload), do: @invalid_request
+
+  defp build_transport_request("updateSlot", %{slot_id: slot_id, position: position})
+       when is_binary(slot_id) and is_map(position) do
+    {:ok,
+     %{
+       "messageId" => UUID.uuid4(),
+       "$type" => "updateSlot",
+       "data" => %{
+         "id" => slot_id,
+         "position" => %{"$type" => "float3", "value" => position}
+       }
+     }}
+  end
+
+  defp build_transport_request("removeSlot", %{slot_id: slot_id}) when is_binary(slot_id) do
+    {:ok, %{"messageId" => UUID.uuid4(), "$type" => "removeSlot", "slotId" => slot_id}}
+  end
+
+  defp build_transport_request(_type, _payload), do: @invalid_request
 end
