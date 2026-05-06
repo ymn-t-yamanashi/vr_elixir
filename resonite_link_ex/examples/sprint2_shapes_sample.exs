@@ -92,7 +92,6 @@ defmodule Sprint2ShapesSample do
 
   defp handle_spawn_result!({:ok, ids}, shape) do
     IO.puts("生成要求送信: #{shape} slot_id=#{ids.slot_id}")
-    Process.sleep(120)
     :ok
   end
 

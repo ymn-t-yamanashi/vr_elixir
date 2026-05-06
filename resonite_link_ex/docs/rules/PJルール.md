@@ -36,3 +36,4 @@
 - 作業完了前に、依頼項目の消化確認と差分確認（`git status`）を必ず実施する。
 - 「整合性確認」の依頼では、関連する全mdを対象集合として先に列挙し、用語・対象数の差異を全件抽出してから修正する。
 - 整合修正後は、同一条件で再検索して残件ゼロを確認し、確認したファイル一覧と確認観点を回答に明記する。
+- 品質確認を実施した場合は、回答時に `mix format --check-formatted` / `mix compile --warnings-as-errors` / `mix check.docs` / `mix credo --strict` / `mix test --cover` の実行有無と結果（成功/失敗）を毎回明記する。
