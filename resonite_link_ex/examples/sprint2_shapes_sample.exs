@@ -25,7 +25,6 @@ defmodule Sprint2ShapesSample do
     # 4) 7図形を順番に生成する
     Shapes.spawn_quad(transport,
       name: "Sprint2Quad",
-      parent_id: "Root",
       position: %{"x" => -1.8, "y" => 1.4, "z" => 0.5},
       scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
       color: %{"r" => 1, "g" => 0.2, "b" => 0.2, "a" => 1}
@@ -34,7 +33,6 @@ defmodule Sprint2ShapesSample do
 
     Shapes.spawn_cube(transport,
       name: "Sprint2Cube",
-      parent_id: "Root",
       position: %{"x" => -1.2, "y" => 1.4, "z" => 0.5},
       scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
       color: %{"r" => 0.2, "g" => 0.2, "b" => 1, "a" => 1}
@@ -43,7 +41,6 @@ defmodule Sprint2ShapesSample do
 
     Shapes.spawn_sphere(transport,
       name: "Sprint2Sphere",
-      parent_id: "Root",
       position: %{"x" => -0.6, "y" => 1.4, "z" => 0.5},
       scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
       color: %{"r" => 0.2, "g" => 1, "b" => 0.2, "a" => 1}
@@ -52,7 +49,6 @@ defmodule Sprint2ShapesSample do
 
     Shapes.spawn_cylinder(transport,
       name: "Sprint2Cylinder",
-      parent_id: "Root",
       position: %{"x" => 0.0, "y" => 1.4, "z" => 0.5},
       scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
       color: %{"r" => 1, "g" => 0.9, "b" => 0.2, "a" => 1}
@@ -61,7 +57,6 @@ defmodule Sprint2ShapesSample do
 
     Shapes.spawn_capsule(transport,
       name: "Sprint2Capsule",
-      parent_id: "Root",
       position: %{"x" => 0.6, "y" => 1.4, "z" => 0.5},
       scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
       color: %{"r" => 1, "g" => 0.5, "b" => 0.2, "a" => 1}
@@ -70,7 +65,6 @@ defmodule Sprint2ShapesSample do
 
     Shapes.spawn_ring(transport,
       name: "Sprint2Ring",
-      parent_id: "Root",
       position: %{"x" => 1.2, "y" => 1.4, "z" => 0.5},
       scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
       color: %{"r" => 0.8, "g" => 0.3, "b" => 1, "a" => 1}
@@ -79,7 +73,6 @@ defmodule Sprint2ShapesSample do
 
     Shapes.spawn_grid(transport,
       name: "Sprint2Grid",
-      parent_id: "Root",
       position: %{"x" => 1.8, "y" => 1.4, "z" => 0.5},
       scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
       color: %{"r" => 0.2, "g" => 1, "b" => 1, "a" => 1}
