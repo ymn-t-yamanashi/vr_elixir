@@ -23,116 +23,80 @@ defmodule Sprint2ShapesSample do
     wait_session_ready(client, 30)
 
     # 4) 7図形を順番に生成する
-    spawn_quad!(transport)
-    spawn_cube!(transport)
-    spawn_sphere!(transport)
-    spawn_cylinder!(transport)
-    spawn_capsule!(transport)
-    spawn_ring!(transport)
-    spawn_grid!(transport)
+    Shapes.spawn_quad(transport,
+      name: "Sprint2Quad",
+      parent_id: "Root",
+      position: %{"x" => -1.8, "y" => 1.4, "z" => 0.5},
+      scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
+      color: %{"r" => 1, "g" => 0.2, "b" => 0.2, "a" => 1}
+    )
+    |> handle_spawn_result!(:quad)
+
+    Shapes.spawn_cube(transport,
+      name: "Sprint2Cube",
+      parent_id: "Root",
+      position: %{"x" => -1.2, "y" => 1.4, "z" => 0.5},
+      scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
+      color: %{"r" => 0.2, "g" => 0.2, "b" => 1, "a" => 1}
+    )
+    |> handle_spawn_result!(:cube)
+
+    Shapes.spawn_sphere(transport,
+      name: "Sprint2Sphere",
+      parent_id: "Root",
+      position: %{"x" => -0.6, "y" => 1.4, "z" => 0.5},
+      scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
+      color: %{"r" => 0.2, "g" => 1, "b" => 0.2, "a" => 1}
+    )
+    |> handle_spawn_result!(:sphere)
+
+    Shapes.spawn_cylinder(transport,
+      name: "Sprint2Cylinder",
+      parent_id: "Root",
+      position: %{"x" => 0.0, "y" => 1.4, "z" => 0.5},
+      scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
+      color: %{"r" => 1, "g" => 0.9, "b" => 0.2, "a" => 1}
+    )
+    |> handle_spawn_result!(:cylinder)
+
+    Shapes.spawn_capsule(transport,
+      name: "Sprint2Capsule",
+      parent_id: "Root",
+      position: %{"x" => 0.6, "y" => 1.4, "z" => 0.5},
+      scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
+      color: %{"r" => 1, "g" => 0.5, "b" => 0.2, "a" => 1}
+    )
+    |> handle_spawn_result!(:capsule)
+
+    Shapes.spawn_ring(transport,
+      name: "Sprint2Ring",
+      parent_id: "Root",
+      position: %{"x" => 1.2, "y" => 1.4, "z" => 0.5},
+      scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
+      color: %{"r" => 0.8, "g" => 0.3, "b" => 1, "a" => 1}
+    )
+    |> handle_spawn_result!(:ring)
+
+    Shapes.spawn_grid(transport,
+      name: "Sprint2Grid",
+      parent_id: "Root",
+      position: %{"x" => 1.8, "y" => 1.4, "z" => 0.5},
+      scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
+      color: %{"r" => 0.2, "g" => 1, "b" => 1, "a" => 1}
+    )
+    |> handle_spawn_result!(:grid)
 
     IO.puts("7図形の生成要求を送信しました。")
     :ok
   end
 
-  defp spawn_quad!(transport),
-    do:
-      spawn_with_opts!(
-        :quad,
-        Shapes.spawn_quad(transport,
-          name: "Sprint2Quad",
-          parent_id: "Root",
-          position: %{"x" => -1.8, "y" => 1.4, "z" => 0.5},
-          scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
-          color: %{"r" => 1, "g" => 0.2, "b" => 0.2, "a" => 1}
-        )
-      )
-
-  defp spawn_cube!(transport),
-    do:
-      spawn_with_opts!(
-        :cube,
-        Shapes.spawn_cube(transport,
-          name: "Sprint2Cube",
-          parent_id: "Root",
-          position: %{"x" => -1.2, "y" => 1.4, "z" => 0.5},
-          scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
-          color: %{"r" => 0.2, "g" => 0.2, "b" => 1, "a" => 1}
-        )
-      )
-
-  defp spawn_sphere!(transport),
-    do:
-      spawn_with_opts!(
-        :sphere,
-        Shapes.spawn_sphere(transport,
-          name: "Sprint2Sphere",
-          parent_id: "Root",
-          position: %{"x" => -0.6, "y" => 1.4, "z" => 0.5},
-          scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
-          color: %{"r" => 0.2, "g" => 1, "b" => 0.2, "a" => 1}
-        )
-      )
-
-  defp spawn_cylinder!(transport),
-    do:
-      spawn_with_opts!(
-        :cylinder,
-        Shapes.spawn_cylinder(transport,
-          name: "Sprint2Cylinder",
-          parent_id: "Root",
-          position: %{"x" => 0.0, "y" => 1.4, "z" => 0.5},
-          scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
-          color: %{"r" => 1, "g" => 0.9, "b" => 0.2, "a" => 1}
-        )
-      )
-
-  defp spawn_capsule!(transport),
-    do:
-      spawn_with_opts!(
-        :capsule,
-        Shapes.spawn_capsule(transport,
-          name: "Sprint2Capsule",
-          parent_id: "Root",
-          position: %{"x" => 0.6, "y" => 1.4, "z" => 0.5},
-          scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
-          color: %{"r" => 1, "g" => 0.5, "b" => 0.2, "a" => 1}
-        )
-      )
-
-  defp spawn_ring!(transport),
-    do:
-      spawn_with_opts!(
-        :ring,
-        Shapes.spawn_ring(transport,
-          name: "Sprint2Ring",
-          parent_id: "Root",
-          position: %{"x" => 1.2, "y" => 1.4, "z" => 0.5},
-          scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
-          color: %{"r" => 0.8, "g" => 0.3, "b" => 1, "a" => 1}
-        )
-      )
-
-  defp spawn_grid!(transport),
-    do:
-      spawn_with_opts!(
-        :grid,
-        Shapes.spawn_grid(transport,
-          name: "Sprint2Grid",
-          parent_id: "Root",
-          position: %{"x" => 1.8, "y" => 1.4, "z" => 0.5},
-          scale: %{"x" => 0.35, "y" => 0.35, "z" => 0.35},
-          color: %{"r" => 0.2, "g" => 1, "b" => 1, "a" => 1}
-        )
-      )
-
-  defp spawn_with_opts!(shape, {:ok, ids}) do
+  defp handle_spawn_result!({:ok, ids}, shape) do
     IO.puts("生成要求送信: #{shape} slot_id=#{ids.slot_id}")
     Process.sleep(120)
     :ok
   end
 
-  defp spawn_with_opts!(shape, {:error, reason}) do
+  defp handle_spawn_result!({:error, reason}, shape) do
     raise "図形生成に失敗: shape=#{shape} reason=#{inspect(reason)}"
   end
 
