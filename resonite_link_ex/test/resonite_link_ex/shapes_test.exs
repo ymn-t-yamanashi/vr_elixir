@@ -1,7 +1,9 @@
 defmodule ResoniteLinkEx.ShapesTest do
   use ExUnit.Case, async: true
 
+  alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Shapes
+  alias ResoniteLinkEx.Transport
 
   describe "component_type/1" do
     test "7図形の componentType を返す" do
@@ -20,7 +22,7 @@ defmodule ResoniteLinkEx.ShapesTest do
   end
 
   describe "build_messages/2" do
-    test "有効入力で6メッセージを返す" do
+    test "有効入力で既定親作成を含む7メッセージを返す" do
       assert {:ok, %{ids: ids, messages: messages}} =
                Shapes.build_messages(:quad, name: "SampleQuad")
 
@@ -28,12 +30,24 @@ defmodule ResoniteLinkEx.ShapesTest do
       assert is_binary(ids.mesh_id)
       assert is_binary(ids.material_id)
       assert is_binary(ids.renderer_id)
-      assert length(messages) == 6
+      assert length(messages) == 7
 
-      [add_slot, add_mesh | _] = messages
+      [add_default_parent, add_slot, add_mesh | _] = messages
+      assert add_default_parent["$type"] == "addSlot"
+      assert add_default_parent["data"]["name"]["value"] == "ResoniteLinkEx"
+      assert add_default_parent["data"]["id"] == "parent_resonitelinkex"
       assert add_slot["$type"] == "addSlot"
       assert add_mesh["$type"] == "addComponent"
       assert add_mesh["data"]["componentType"] == "[FrooxEngine]FrooxEngine.QuadMesh"
+    end
+
+    test "parent_name 指定時は指定名を親として使い親自動生成はしない" do
+      assert {:ok, %{messages: messages}} =
+               Shapes.build_messages(:cube, name: "CubeA", parent_name: "CustomParent")
+
+      assert length(messages) == 6
+      [add_slot | _] = messages
+      assert add_slot["data"]["parent"]["targetId"] == "parent_customparent"
     end
 
     test "必須name欠落で invalid_request を返す" do
@@ -93,6 +107,7 @@ defmodule ResoniteLinkEx.ShapesTest do
       assert is_binary(ids.slot_id)
       assert_receive {:payload, %{"$type" => "addSlot", "messageId" => message_id}}
       assert is_binary(message_id)
+      assert_receive {:payload, %{"$type" => "addSlot"}}
       assert_receive {:payload, %{"$type" => "addComponent"}}
       assert_receive {:payload, %{"$type" => "addComponent"}}
       assert_receive {:payload, %{"$type" => "addComponent"}}
@@ -122,7 +137,27 @@ defmodule ResoniteLinkEx.ShapesTest do
                  client_pid: client
                )
 
-      assert 6 = ResoniteLinkEx.Client.pending_count(client)
+      assert 7 = ResoniteLinkEx.Client.pending_count(client)
+    end
+
+    test "client_pid 未指定時は transport から自動解決して pending へ登録する" do
+      {server_pid, port} = start_ws_mock_server()
+      assert {:ok, client} = Client.start_link([])
+
+      assert {:ok, transport} =
+               Transport.start_link(client, host: "localhost", port: port, path: "")
+
+      send_fun = fn _transport_pid, _payload -> :ok end
+
+      assert {:ok, _ids} =
+               Shapes.spawn_shape(transport, :cube,
+                 name: "CubeAuto",
+                 send_fun: send_fun
+               )
+
+      assert 8 = Client.pending_count(client)
+      Process.exit(transport, :normal)
+      Process.exit(server_pid, :normal)
     end
 
     test "不正引数で invalid_request を返す" do
@@ -155,5 +190,49 @@ defmodule ResoniteLinkEx.ShapesTest do
       assert {:ok, _ids} = Shapes.spawn_ring(self(), opts)
       assert {:ok, _ids} = Shapes.spawn_grid(self(), opts)
     end
+  end
+
+  defp start_ws_mock_server do
+    {:ok, listen_socket} =
+      :gen_tcp.listen(0, [:binary, packet: :raw, active: false, reuseaddr: true])
+
+    {:ok, port} = :inet.port(listen_socket)
+
+    pid =
+      spawn_link(fn ->
+        {:ok, socket} = :gen_tcp.accept(listen_socket)
+        {:ok, request} = :gen_tcp.recv(socket, 0, 1_000)
+        key = extract_ws_key(request)
+        accept = ws_accept(key)
+
+        response =
+          "HTTP/1.1 101 Switching Protocols\r\n" <>
+            "Upgrade: websocket\r\n" <>
+            "Connection: Upgrade\r\n" <>
+            "Sec-WebSocket-Accept: #{accept}\r\n\r\n"
+
+        :ok = :gen_tcp.send(socket, response)
+        Process.sleep(1_000)
+        :gen_tcp.close(socket)
+        :gen_tcp.close(listen_socket)
+      end)
+
+    {pid, port}
+  end
+
+  defp extract_ws_key(request) do
+    request
+    |> String.split("\r\n")
+    |> Enum.find_value(fn line ->
+      case String.split(line, ": ", parts: 2) do
+        ["Sec-WebSocket-Key", key] -> key
+        _other -> nil
+      end
+    end)
+  end
+
+  defp ws_accept(key) do
+    :crypto.hash(:sha, key <> "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+    |> Base.encode64()
   end
 end

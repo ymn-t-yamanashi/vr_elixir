@@ -11,6 +11,7 @@ defmodule ResoniteLinkEx.Protocol do
   @type_update_component "updateComponent"
   @type_remove_component "removeComponent"
   @type_remove_slot "removeSlot"
+  @type_get_slot "getSlot"
 
   # スプリント1で送信を許可する ResoniteLink の `$type` 一覧。
   @types [
@@ -27,7 +28,9 @@ defmodule ResoniteLinkEx.Protocol do
     # Component を削除する
     @type_remove_component,
     # Slot を削除する
-    @type_remove_slot
+    @type_remove_slot,
+    # Slot 情報を取得する
+    @type_get_slot
   ]
 
   @doc """
@@ -76,6 +79,10 @@ defmodule ResoniteLinkEx.Protocol do
     {:ok, payload}
   end
 
+  def validate_payload(@type_get_slot, %{slot_id: _slot_id} = payload) do
+    {:ok, payload}
+  end
+
   def validate_payload(_type, _payload) do
     @invalid_request
   end
@@ -90,6 +97,16 @@ defmodule ResoniteLinkEx.Protocol do
       {:ok, %{"messageId" => generate_message_id(), "$type" => type, "data" => validated_payload}}
     else
       _ -> @invalid_request
+    end
+  end
+
+  @doc """
+  送信直前に ResoniteLink 仕様（camelCase）へ変換したリクエスト map を生成する。
+  """
+  @spec encode_transport_request(String.t(), map()) :: {:ok, map()} | {:error, :invalid_request}
+  def encode_transport_request(type, payload) do
+    with {:ok, request} <- encode_request(type, payload) do
+      {:ok, Map.update!(request, "data", &to_transport_payload(type, &1))}
     end
   end
 
@@ -115,5 +132,50 @@ defmodule ResoniteLinkEx.Protocol do
 
   defp has_update_slot_field?(payload) do
     Enum.any?([:position, :rotation, :scale, :name], &Map.has_key?(payload, &1))
+  end
+
+  defp to_transport_payload(@type_add_slot, payload) do
+    payload
+    |> rename_key(:parent_id, "parentId")
+  end
+
+  defp to_transport_payload(@type_update_slot, payload) do
+    payload
+    |> rename_key(:slot_id, "slotId")
+  end
+
+  defp to_transport_payload(@type_add_component, payload) do
+    payload
+    |> rename_key(:slot_id, "slotId")
+    |> rename_key(:component_type, "componentType")
+  end
+
+  defp to_transport_payload(@type_update_component, payload) do
+    payload
+    |> rename_key(:component_id, "componentId")
+  end
+
+  defp to_transport_payload(@type_remove_component, payload) do
+    payload
+    |> rename_key(:component_id, "componentId")
+  end
+
+  defp to_transport_payload(@type_remove_slot, payload) do
+    payload
+    |> rename_key(:slot_id, "slotId")
+  end
+
+  defp to_transport_payload(@type_get_slot, payload) do
+    payload
+    |> rename_key(:slot_id, "slotId")
+  end
+
+  defp to_transport_payload(_type, payload), do: payload
+
+  defp rename_key(payload, from_atom, to_string) do
+    case Map.pop(payload, from_atom) do
+      {nil, rest} -> rest
+      {value, rest} -> Map.put(rest, to_string, value)
+    end
   end
 end

@@ -11,6 +11,7 @@ defmodule ResoniteLinkEx.ProtocolTest do
     assert Protocol.valid_type?("updateComponent")
     assert Protocol.valid_type?("removeComponent")
     assert Protocol.valid_type?("removeSlot")
+    assert Protocol.valid_type?("getSlot")
   end
 
   test "valid_type?/1 は対象外コマンドで false を返す" do
@@ -114,6 +115,24 @@ defmodule ResoniteLinkEx.ProtocolTest do
 
   test "encode_request/2 は不正な入力なら invalid_request を返す" do
     assert {:error, :invalid_request} = Protocol.encode_request("addSlot", %{})
+  end
+
+  test "encode_transport_request/2 は updateSlot の slot_id を slotId に変換する" do
+    payload = %{slot_id: "SlotA", position: %{x: 0, y: 1, z: 0}}
+
+    assert {:ok,
+            %{
+              "$type" => "updateSlot",
+              "data" => %{"slotId" => "SlotA", position: %{x: 0, y: 1, z: 0}}
+            }} = Protocol.encode_transport_request("updateSlot", payload)
+  end
+
+  test "encode_transport_request/2 は removeSlot/getSlot の slot_id を slotId に変換する" do
+    assert {:ok, %{"$type" => "removeSlot", "data" => %{"slotId" => "SlotA"}}} =
+             Protocol.encode_transport_request("removeSlot", %{slot_id: "SlotA"})
+
+    assert {:ok, %{"$type" => "getSlot", "data" => %{"slotId" => "SlotA"}}} =
+             Protocol.encode_transport_request("getSlot", %{slot_id: "SlotA"})
   end
 
   test "decode_response/1 は messageId を含む map を ok で返す" do

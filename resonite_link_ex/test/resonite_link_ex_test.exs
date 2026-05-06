@@ -20,6 +20,33 @@ defmodule ResoniteLinkExTest do
     assert {:error, :invalid_request} = ResoniteLinkEx.receive_response(:not_pid, %{})
   end
 
+  test "get_slot/2 は getSlot 呼び出しを委譲する" do
+    assert {:ok, pid} = ResoniteLinkEx.start_client()
+
+    assert {:ok,
+            %{"$type" => "getSlot", "data" => %{slot_id: "SlotA"}, "messageId" => _message_id}} =
+             ResoniteLinkEx.get_slot(pid, "SlotA")
+  end
+
+  test "move_slot_by_name/4 は Objects.move_slot_by_name/4 を委譲する" do
+    assert {:ok, pid} = ResoniteLinkEx.start_client()
+    resolver = fn _client, _name, _opts -> {:ok, "SlotA"} end
+    position = %{"x" => 0, "y" => 1, "z" => 2}
+
+    assert {:ok, %{"$type" => "updateSlot", "data" => %{slot_id: "SlotA", position: ^position}}} =
+             ResoniteLinkEx.move_slot_by_name(pid, "CubeA", position,
+               resolve_slot_id_fun: resolver
+             )
+  end
+
+  test "delete_slot_by_name/3 は Objects.delete_slot_by_name/3 を委譲する" do
+    assert {:ok, pid} = ResoniteLinkEx.start_client()
+    resolver = fn _client, _name, _opts -> {:ok, "SlotA"} end
+
+    assert {:ok, %{"$type" => "removeSlot", "data" => %{slot_id: "SlotA"}}} =
+             ResoniteLinkEx.delete_slot_by_name(pid, "CubeA", resolve_slot_id_fun: resolver)
+  end
+
   test "spawn_shape/3 は Shapes.spawn_shape/3 を委譲する" do
     send_fun = fn _transport_pid, _payload -> :ok end
 
