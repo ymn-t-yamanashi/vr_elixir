@@ -11,6 +11,7 @@ defmodule ResoniteLinkEx.ProtocolTest do
     assert Protocol.valid_type?("updateComponent")
     assert Protocol.valid_type?("removeComponent")
     assert Protocol.valid_type?("removeSlot")
+    assert Protocol.valid_type?("getSlot")
   end
 
   test "valid_type?/1 は対象外コマンドで false を返す" do

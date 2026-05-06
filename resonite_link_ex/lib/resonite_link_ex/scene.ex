@@ -13,7 +13,8 @@ defmodule ResoniteLinkEx.Scene do
     "addComponent",
     "updateComponent",
     "removeComponent",
-    "removeSlot"
+    "removeSlot",
+    "getSlot"
   ]
 
   @doc """

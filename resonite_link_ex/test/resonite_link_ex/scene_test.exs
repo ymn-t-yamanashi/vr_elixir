@@ -110,7 +110,8 @@ defmodule ResoniteLinkEx.SceneTest do
              "addComponent",
              "updateComponent",
              "removeComponent",
-             "removeSlot"
+             "removeSlot",
+             "getSlot"
            ] == Scene.supported_commands()
   end
 

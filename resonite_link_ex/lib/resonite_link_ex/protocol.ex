@@ -11,6 +11,7 @@ defmodule ResoniteLinkEx.Protocol do
   @type_update_component "updateComponent"
   @type_remove_component "removeComponent"
   @type_remove_slot "removeSlot"
+  @type_get_slot "getSlot"
 
   # スプリント1で送信を許可する ResoniteLink の `$type` 一覧。
   @types [
@@ -27,7 +28,9 @@ defmodule ResoniteLinkEx.Protocol do
     # Component を削除する
     @type_remove_component,
     # Slot を削除する
-    @type_remove_slot
+    @type_remove_slot,
+    # Slot 情報を取得する
+    @type_get_slot
   ]
 
   @doc """
@@ -73,6 +76,10 @@ defmodule ResoniteLinkEx.Protocol do
   end
 
   def validate_payload(@type_remove_slot, %{slot_id: _slot_id} = payload) do
+    {:ok, payload}
+  end
+
+  def validate_payload(@type_get_slot, %{slot_id: _slot_id} = payload) do
     {:ok, payload}
   end
 
