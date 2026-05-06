@@ -93,6 +93,16 @@ defmodule ResoniteLinkEx.TransportTest do
     assert {:error, :invalid_request} = Transport.client_pid(:not_pid)
   end
 
+  test "client_pid/1 は self 指定を invalid_request で拒否する" do
+    assert {:error, :invalid_request} = Transport.client_pid(self())
+  end
+
+  test "client_pid/1 は state に client_pid が無い場合 invalid_request を返す" do
+    {:ok, pid} = Agent.start_link(fn -> %{client_pid: "not_pid"} end)
+    assert {:error, :invalid_request} = Transport.client_pid(pid)
+    Agent.stop(pid)
+  end
+
   test "send_json/2 は有効payloadを送信できる" do
     {server_pid, port} = start_ws_mock_server()
     assert {:ok, client} = Client.start_link([])
