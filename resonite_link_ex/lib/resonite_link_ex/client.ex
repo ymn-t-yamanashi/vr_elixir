@@ -3,7 +3,6 @@ defmodule ResoniteLinkEx.Client do
   ResoniteLink 接続管理のクライアントモジュール。
   """
 
-  alias ResoniteLinkEx.Core
   alias ResoniteLinkEx.Protocol
 
   use GenServer
@@ -49,57 +48,6 @@ defmodule ResoniteLinkEx.Client do
   @spec connected?(pid()) :: boolean()
   def connected?(pid) when is_pid(pid), do: Process.alive?(pid)
   def connected?(_pid), do: false
-
-  @doc """
-  接続中なら Scene へ命令を委譲し、未接続ならエラーを返す。
-
-  ## Parameters
-  - `client`: `pid()`。
-  - `type`: コマンド文字列。
-  - `payload`: コマンド payload。
-
-  ## Returns
-  - `{:ok, map()}`: 生成成功。
-  - `{:error, term()}`: 未接続または検証失敗。
-
-  ## Examples
-      ResoniteLinkEx.Client.send_command(:not_pid, "addSlot", %{})
-      {:error, :not_connected}
-  """
-  @spec send_command(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-  def send_command(client, type, payload) do
-    cond do
-      not connected?(client) ->
-        @not_connected
-
-      type == "requestSessionData" and payload == %{} ->
-        Core.request_session_data(client)
-
-      type == "addSlot" ->
-        Core.add_slot(client, payload)
-
-      type == "updateSlot" ->
-        Core.update_slot(client, payload)
-
-      type == "addComponent" ->
-        Core.add_component(client, payload)
-
-      type == "updateComponent" ->
-        Core.update_component(client, payload)
-
-      type == "removeComponent" ->
-        Core.remove_component(client, payload)
-
-      type == "removeSlot" ->
-        Core.remove_slot(client, payload)
-
-      type == "getSlot" ->
-        Core.get_slot(client, payload)
-
-      true ->
-        @invalid_request
-    end
-  end
 
   @doc """
   統一IF。接続中ならリクエストを生成し、未接続ならエラーを返す。
