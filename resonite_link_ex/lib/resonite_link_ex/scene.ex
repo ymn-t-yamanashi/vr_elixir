@@ -19,6 +19,19 @@ defmodule ResoniteLinkEx.Scene do
 
   @doc """
   指定した `$type` と `payload` で命令を呼び出す。
+
+  ## Parameters
+  - `client`: 将来拡張用ハンドル（現実装では未使用）。
+  - `type`: 命令種別（例: `"addSlot"`）。
+  - `payload`: 命令データ。
+
+  ## Returns
+  - `{:ok, %{type: String.t(), payload: map()}}`: 検証成功。
+  - `{:error, :invalid_request}`: 型不正または payload 検証失敗。
+
+  ## Examples
+      iex> Scene.call(:client, "requestSessionData", %{})
+      {:ok, %{type: "requestSessionData", payload: %{}}}
   """
   @spec call(term(), String.t(), map()) :: {:ok, map()} | {:error, term()}
   def call(_client, type, _payload) when not is_binary(type), do: @invalid_request
@@ -26,13 +39,33 @@ defmodule ResoniteLinkEx.Scene do
   def call(_client, type, payload), do: map_result(Protocol.encode_request(type, payload))
 
   @doc """
-  スプリント1で対応する `$type` 命令一覧を返す。
+  対応する `$type` 命令一覧を返す。
+
+  ## Returns
+  - `[String.t()]`: サポート済みコマンド。
+
+  ## Examples
+      iex> Scene.supported_commands()
+      ["requestSessionData", "addSlot", "updateSlot", "addComponent", "updateComponent", "removeComponent", "removeSlot", "getSlot"]
   """
   @spec supported_commands() :: [String.t()]
   def supported_commands, do: @supported_commands
 
   @doc """
   `call/3` の成功値を返し、失敗時は例外を送出する。
+
+  ## Parameters
+  - `client`: 将来拡張用ハンドル（現実装では未使用）。
+  - `type`: 命令種別。
+  - `payload`: 命令データ。
+
+  ## Returns
+  - `%{type: String.t(), payload: map()}`: 成功時の結果。
+  - 失敗時は `RuntimeError` を送出。
+
+  ## Examples
+      iex> Scene.call!(:client, "requestSessionData", %{})
+      %{type: "requestSessionData", payload: %{}}
   """
   @spec call!(term(), String.t(), map()) :: map()
   def call!(client, type, payload) do
@@ -44,6 +77,17 @@ defmodule ResoniteLinkEx.Scene do
 
   @doc """
   Quad 表示までの代表命令プランを返す。
+
+  ## Parameters
+  - `parent_id`: 親 Slot ID。
+  - `slot_name`: 生成する Slot 名。
+
+  ## Returns
+  - `[{String.t(), map()}]`: 実行順の命令プラン。
+
+  ## Examples
+      iex> Scene.quad_plan("Root", "QuadA")
+      [{"addSlot", _}, {"updateSlot", _}, {"addComponent", _}, {"updateComponent", _}]
   """
   @spec quad_plan(String.t(), String.t()) :: [{String.t(), map()}]
   def quad_plan(parent_id, slot_name) when is_binary(parent_id) and is_binary(slot_name) do
