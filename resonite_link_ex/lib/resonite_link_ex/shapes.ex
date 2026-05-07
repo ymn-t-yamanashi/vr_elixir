@@ -1,10 +1,19 @@
 defmodule ResoniteLinkEx.Shapes do
   @moduledoc """
-  基本図形生成のメッセージ組み立てと送信を行うモジュール。
+  基本図形（cube, sphere など）を生成するための高水準モジュールです。
+
+  このモジュールは次の流れを一括で実行します。
+  - 図形種別から必要な `componentType` を決定
+  - Slot/Component 生成に必要なIDを採番
+  - 複数の送信メッセージを組み立て
+  - Transport経由で順番に送信
+
+  「この位置にこの名前で図形を出したい」という要求を、
+  低レイヤ詳細を隠して実行できるようにするのが目的です。
   """
 
   alias ResoniteLinkEx.Client
-  alias ResoniteLinkEx.Transport
+  alias ResoniteLinkEx.Client
 
   @invalid_request {:error, :invalid_request}
   @supported_shapes [:quad, :cube, :sphere, :cylinder, :capsule, :ring, :grid]
@@ -26,6 +35,16 @@ defmodule ResoniteLinkEx.Shapes do
 
   @doc """
   指定図形の `componentType` を返す。
+
+  ## Parameters
+  - `shape`: 図形種別。
+
+  ## Returns
+  - `{:ok, String.t()} | {:error, :invalid_request}`: 解決結果。
+
+  ## Examples
+      ResoniteLinkEx.Shapes.component_type(:quad)
+      {:ok, "[FrooxEngine]FrooxEngine.QuadMesh"}
   """
   @spec component_type(atom()) :: {:ok, String.t()} | {:error, :invalid_request}
   def component_type(shape) when shape in @supported_shapes,
@@ -35,6 +54,17 @@ defmodule ResoniteLinkEx.Shapes do
 
   @doc """
   図形生成に必要なメッセージを組み立てる。
+
+  ## Parameters
+  - `shape`: 図形種別。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, %{ids: map(), messages: [map()]}} | {:error, :invalid_request}`: 生成結果。
+
+  ## Examples
+      match?({:ok, %{ids: _ids, messages: _messages}}, ResoniteLinkEx.Shapes.build_messages(:quad, name: "QuadA"))
+      true
   """
   @spec build_messages(atom(), keyword()) ::
           {:ok, %{ids: map(), messages: [map()]}} | {:error, :invalid_request}
@@ -53,11 +83,24 @@ defmodule ResoniteLinkEx.Shapes do
 
   @doc """
   共通API。図形生成メッセージを送信し、生成したID群を返す。
+
+  ## Parameters
+  - `transport_pid`: `pid()`。
+  - `shape`: 図形種別。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, map()} | {:error, term()}`: 送信結果。
+
+  ## Examples
+      send_fun = fn _transport_pid, _payload -> :ok end
+      match?({:ok, _ids}, ResoniteLinkEx.Shapes.spawn_shape(self(), :quad, name: "QuadA", send_fun: send_fun, client_pid: nil))
+      true
   """
   @spec spawn_shape(pid(), atom(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_shape(transport_pid, shape, opts)
       when is_pid(transport_pid) and is_atom(shape) and is_list(opts) do
-    send_fun = Keyword.get(opts, :send_fun, &Transport.send_json/2)
+    send_fun = Keyword.get(opts, :send_fun, &Client.send_json/2)
     client_pid_opt = Keyword.get(opts, :client_pid, :auto)
 
     with true <- is_function(send_fun, 2),
@@ -75,42 +118,126 @@ defmodule ResoniteLinkEx.Shapes do
 
   @doc """
   Quad を生成する。
+
+  ## Parameters
+  - `transport_pid`: `pid()`。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, map()} | {:error, term()}`: 送信結果。
+
+  ## Examples
+      send_fun = fn _transport_pid, _payload -> :ok end
+      match?({:ok, _ids}, ResoniteLinkEx.Shapes.spawn_quad(self(), name: "QuadA", send_fun: send_fun, client_pid: nil))
+      true
   """
   @spec spawn_quad(pid(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_quad(transport_pid, opts), do: spawn_shape(transport_pid, :quad, opts)
 
   @doc """
   Cube を生成する。
+
+  ## Parameters
+  - `transport_pid`: `pid()`。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, map()} | {:error, term()}`: 送信結果。
+
+  ## Examples
+      send_fun = fn _transport_pid, _payload -> :ok end
+      match?({:ok, _ids}, ResoniteLinkEx.Shapes.spawn_cube(self(), name: "CubeA", send_fun: send_fun, client_pid: nil))
+      true
   """
   @spec spawn_cube(pid(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_cube(transport_pid, opts), do: spawn_shape(transport_pid, :cube, opts)
 
   @doc """
   Sphere を生成する。
+
+  ## Parameters
+  - `transport_pid`: `pid()`。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, map()} | {:error, term()}`: 送信結果。
+
+  ## Examples
+      send_fun = fn _transport_pid, _payload -> :ok end
+      match?({:ok, _ids}, ResoniteLinkEx.Shapes.spawn_sphere(self(), name: "SphereA", send_fun: send_fun, client_pid: nil))
+      true
   """
   @spec spawn_sphere(pid(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_sphere(transport_pid, opts), do: spawn_shape(transport_pid, :sphere, opts)
 
   @doc """
   Cylinder を生成する。
+
+  ## Parameters
+  - `transport_pid`: `pid()`。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, map()} | {:error, term()}`: 送信結果。
+
+  ## Examples
+      send_fun = fn _transport_pid, _payload -> :ok end
+      match?({:ok, _ids}, ResoniteLinkEx.Shapes.spawn_cylinder(self(), name: "CylinderA", send_fun: send_fun, client_pid: nil))
+      true
   """
   @spec spawn_cylinder(pid(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_cylinder(transport_pid, opts), do: spawn_shape(transport_pid, :cylinder, opts)
 
   @doc """
   Capsule を生成する。
+
+  ## Parameters
+  - `transport_pid`: `pid()`。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, map()} | {:error, term()}`: 送信結果。
+
+  ## Examples
+      send_fun = fn _transport_pid, _payload -> :ok end
+      match?({:ok, _ids}, ResoniteLinkEx.Shapes.spawn_capsule(self(), name: "CapsuleA", send_fun: send_fun, client_pid: nil))
+      true
   """
   @spec spawn_capsule(pid(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_capsule(transport_pid, opts), do: spawn_shape(transport_pid, :capsule, opts)
 
   @doc """
   Ring を生成する。
+
+  ## Parameters
+  - `transport_pid`: `pid()`。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, map()} | {:error, term()}`: 送信結果。
+
+  ## Examples
+      send_fun = fn _transport_pid, _payload -> :ok end
+      match?({:ok, _ids}, ResoniteLinkEx.Shapes.spawn_ring(self(), name: "RingA", send_fun: send_fun, client_pid: nil))
+      true
   """
   @spec spawn_ring(pid(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_ring(transport_pid, opts), do: spawn_shape(transport_pid, :ring, opts)
 
   @doc """
   Grid を生成する。
+
+  ## Parameters
+  - `transport_pid`: `pid()`。
+  - `opts`: 生成オプション。
+
+  ## Returns
+  - `{:ok, map()} | {:error, term()}`: 送信結果。
+
+  ## Examples
+      send_fun = fn _transport_pid, _payload -> :ok end
+      match?({:ok, _ids}, ResoniteLinkEx.Shapes.spawn_grid(self(), name: "GridA", send_fun: send_fun, client_pid: nil))
+      true
   """
   @spec spawn_grid(pid(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_grid(transport_pid, opts), do: spawn_shape(transport_pid, :grid, opts)
@@ -140,7 +267,7 @@ defmodule ResoniteLinkEx.Shapes do
   defp resolve_client_pid(_transport_pid, nil), do: {:ok, nil}
 
   defp resolve_client_pid(transport_pid, :auto) do
-    case Transport.client_pid(transport_pid) do
+    case Client.client_pid(transport_pid) do
       {:ok, client_pid} -> {:ok, client_pid}
       {:error, _reason} -> {:error, :invalid_request}
     end

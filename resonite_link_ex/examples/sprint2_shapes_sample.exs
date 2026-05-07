@@ -7,7 +7,6 @@ defmodule Sprint2ShapesSample do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Shapes
-  alias ResoniteLinkEx.Transport
 
   @host "localhost"
 
@@ -17,10 +16,11 @@ defmodule Sprint2ShapesSample do
 
     # 2) クライアントとトランスポートを起動する
     {:ok, client} = ResoniteLinkEx.start_client()
-    {:ok, transport} = Transport.start_link(client, host: @host, port: port, path: "")
+    {:ok, transport} = Client.start_link(client, host: @host, port: port, path: "")
 
     # 3) セッション準備完了を待つ
     wait_session_ready(client, 30)
+    ensure_resonite_link_ex_slot(transport, client)
 
     # 4) 7図形を順番に生成する
     Shapes.spawn_quad(transport,
@@ -90,6 +90,31 @@ defmodule Sprint2ShapesSample do
 
   defp handle_spawn_result!({:error, reason}, shape) do
     raise "図形生成に失敗: shape=#{shape} reason=#{inspect(reason)}"
+  end
+
+  defp ensure_resonite_link_ex_slot(transport, client) do
+    warmup_name = "_sprint2_parent_bootstrap_" <> String.slice(UUID.uuid4(), 0, 8)
+
+    do_spawn_warmup(transport, client, warmup_name, 3)
+  end
+
+  defp do_spawn_warmup(_transport, _client, _name, 0), do: :ok
+
+  defp do_spawn_warmup(transport, client, name, retry_left) do
+    case Shapes.spawn_cube(transport,
+           name: name,
+           position: %{"x" => 0.0, "y" => -1000.0, "z" => 0.0},
+           scale: %{"x" => 0.01, "y" => 0.01, "z" => 0.01},
+           client_pid: client
+         ) do
+      {:ok, _ids} ->
+        Process.sleep(500)
+        :ok
+
+      {:error, _reason} ->
+        Process.sleep(500)
+        do_spawn_warmup(transport, client, name, retry_left - 1)
+    end
   end
 
   defp wait_session_ready(_client, 0) do

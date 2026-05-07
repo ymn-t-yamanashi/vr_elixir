@@ -1,6 +1,15 @@
 defmodule ResoniteLinkEx.Protocol do
   @moduledoc """
-  ResoniteLink 送受信フォーマットを扱うモジュール。
+  Resonite 通信で使うデータ仕様をまとめたモジュールです。
+
+  主な責務:
+  - 送信可能な `$type` の定義
+  - `$type` ごとの payload 検証
+  - 送信リクエスト（`$type`, `data`, `messageId`）の組み立て
+  - 受信レスポンスの基本検証
+
+  このモジュールを通すことで、上位モジュールは「どのキーが必須か」を
+  毎回意識せずに安全にリクエストを作成できます。
   """
 
   @invalid_request {:error, :invalid_request}
@@ -35,6 +44,16 @@ defmodule ResoniteLinkEx.Protocol do
 
   @doc """
   送信可能な `$type` かどうかを返す。
+
+  ## Parameters
+  - `type`: コマンド文字列。
+
+  ## Returns
+  - `boolean()`: サポート対象なら `true`。
+
+  ## Examples
+      ResoniteLinkEx.Protocol.valid_type?("addSlot")
+      true
   """
   @spec valid_type?(String.t()) :: boolean()
   def valid_type?(type) when is_binary(type) do
@@ -45,6 +64,19 @@ defmodule ResoniteLinkEx.Protocol do
 
   @doc """
   `$type` ごとの payload を検証する。
+
+  ## Parameters
+  - `type`: コマンド文字列。
+  - `payload`: 検証対象 payload。
+
+  ## Returns
+  - `{:ok, map()}`: 検証成功。
+  - `{:error, :invalid_request}`: 検証失敗。
+
+  ## Examples
+      payload = %{parent_id: "Root", name: "BoxA"}
+      ResoniteLinkEx.Protocol.validate_payload("addSlot", payload)
+      {:ok, payload}
   """
   @spec validate_payload(String.t(), map()) :: {:ok, map()} | {:error, :invalid_request}
   def validate_payload(@type_request_session_data, payload) when payload == %{} do
@@ -89,6 +121,19 @@ defmodule ResoniteLinkEx.Protocol do
 
   @doc """
   送信用リクエスト map（`$type` と `data`）を生成する。
+
+  ## Parameters
+  - `type`: コマンド文字列。
+  - `payload`: 送信 payload。
+
+  ## Returns
+  - `{:ok, map()}`: 生成成功。
+  - `{:error, :invalid_request}`: 生成失敗。
+
+  ## Examples
+      payload = %{parent_id: "Root", name: "BoxA"}
+      match?({:ok, %{"$type" => "addSlot"}}, ResoniteLinkEx.Protocol.encode_request("addSlot", payload))
+      true
   """
   @spec encode_request(String.t(), map()) :: {:ok, map()} | {:error, :invalid_request}
   def encode_request(type, payload) do
@@ -102,6 +147,19 @@ defmodule ResoniteLinkEx.Protocol do
 
   @doc """
   送信直前に ResoniteLink 仕様（camelCase）へ変換したリクエスト map を生成する。
+
+  ## Parameters
+  - `type`: コマンド文字列。
+  - `payload`: 送信 payload。
+
+  ## Returns
+  - `{:ok, map()}`: 変換成功。
+  - `{:error, :invalid_request}`: 変換失敗。
+
+  ## Examples
+      payload = %{slot_id: "SlotA", position: %{x: 0, y: 1, z: 0}}
+      match?({:ok, %{"$type" => "updateSlot"}}, ResoniteLinkEx.Protocol.encode_transport_request("updateSlot", payload))
+      true
   """
   @spec encode_transport_request(String.t(), map()) :: {:ok, map()} | {:error, :invalid_request}
   def encode_transport_request(type, payload) do
@@ -112,6 +170,17 @@ defmodule ResoniteLinkEx.Protocol do
 
   @doc """
   受信レスポンスを検証して返す。
+
+  ## Parameters
+  - `response`: 受信 map。
+
+  ## Returns
+  - `{:ok, map()}`: 検証成功。
+  - `{:error, :decode_error}`: 解析失敗。
+
+  ## Examples
+      ResoniteLinkEx.Protocol.decode_response(%{"messageId" => "m1"})
+      {:ok, %{"messageId" => "m1"}}
   """
   @spec decode_response(map()) :: {:ok, map()} | {:error, :decode_error}
   def decode_response(%{"sourceMessageId" => source_message_id} = response)
@@ -126,6 +195,13 @@ defmodule ResoniteLinkEx.Protocol do
 
   @doc """
   リクエスト対応付けに使う `UUID v4` 文字列を生成する。
+
+  ## Returns
+  - `String.t()`: UUID v4 文字列。
+
+  ## Examples
+      is_binary(ResoniteLinkEx.Protocol.generate_message_id())
+      true
   """
   @spec generate_message_id() :: String.t()
   def generate_message_id, do: UUID.uuid4()

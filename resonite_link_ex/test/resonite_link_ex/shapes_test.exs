@@ -3,7 +3,6 @@ defmodule ResoniteLinkEx.ShapesTest do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Shapes
-  alias ResoniteLinkEx.Transport
 
   describe "component_type/1" do
     test "7図形の componentType を返す" do
@@ -50,6 +49,14 @@ defmodule ResoniteLinkEx.ShapesTest do
       assert add_slot["data"]["parent"]["targetId"] == "parent_customparent"
     end
 
+    test "parent_id 指定時は parent_id を優先して使う" do
+      assert {:ok, %{messages: [add_slot | _]}} =
+               Shapes.build_messages(:cube, name: "CubeA", parent_id: "ParentA")
+
+      assert add_slot["$type"] == "addSlot"
+      assert add_slot["data"]["parent"]["targetId"] == "ParentA"
+    end
+
     test "必須name欠落で invalid_request を返す" do
       assert {:error, :invalid_request} = Shapes.build_messages(:quad, [])
     end
@@ -65,6 +72,14 @@ defmodule ResoniteLinkEx.ShapesTest do
 
     test "parent_id形式不正で invalid_request を返す" do
       assert {:error, :invalid_request} = Shapes.build_messages(:quad, name: "x", parent_id: "")
+    end
+
+    test "parent_id が文字列以外なら invalid_request を返す" do
+      assert {:error, :invalid_request} = Shapes.build_messages(:quad, name: "x", parent_id: 1)
+    end
+
+    test "parent_name が空文字なら invalid_request を返す" do
+      assert {:error, :invalid_request} = Shapes.build_messages(:quad, name: "x", parent_name: "")
     end
 
     test "position形式不正で invalid_request を返す" do
@@ -145,7 +160,7 @@ defmodule ResoniteLinkEx.ShapesTest do
       assert {:ok, client} = Client.start_link([])
 
       assert {:ok, transport} =
-               Transport.start_link(client, host: "localhost", port: port, path: "")
+               Client.start_link(client, host: "localhost", port: port, path: "")
 
       send_fun = fn _transport_pid, _payload -> :ok end
 

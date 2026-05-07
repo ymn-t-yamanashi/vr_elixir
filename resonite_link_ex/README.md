@@ -15,15 +15,26 @@ ResoniteLink 用の Elixir クライアント最小実装です。
 ## 主な公開 API
 
 - `ResoniteLinkEx.start_client/1`
-- `ResoniteLinkEx.call/3`
 - `ResoniteLinkEx.receive_response/2`
-- `ResoniteLinkEx.Scene.supported_commands/0`
-- `ResoniteLinkEx.Scene.quad_plan/2`
+- `ResoniteLinkEx.Core.request_session_data/1`
+- `ResoniteLinkEx.Core.add_slot/2`
+- `ResoniteLinkEx.Core.update_slot/2`
+- `ResoniteLinkEx.Core.add_component/2`
+- `ResoniteLinkEx.Core.update_component/2`
+- `ResoniteLinkEx.Core.remove_component/2`
+- `ResoniteLinkEx.Core.remove_slot/2`
+- `ResoniteLinkEx.Core.get_slot/2`
 
 ## ホストでの品質ゲート
 
 ```bash
 cd resonite_link_ex && mix local.hex --force && mix local.rebar --force && mix deps.get && mix format --check-formatted && mix compile --warnings-as-errors && mix check.docs && mix credo --strict && mix test --cover
+```
+
+## ドキュメント生成
+
+```bash
+cd resonite_link_ex && mix docs
 ```
 
 ## テスト方針
