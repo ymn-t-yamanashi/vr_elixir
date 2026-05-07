@@ -25,8 +25,6 @@ ResoniteLink 用の Elixir クライアント最小実装です。
 - `ResoniteLinkEx.Core.remove_component/2`
 - `ResoniteLinkEx.Core.remove_slot/2`
 - `ResoniteLinkEx.Core.get_slot/2`
-- `ResoniteLinkEx.Scene.supported_commands/0`
-- `ResoniteLinkEx.Scene.quad_plan/2`
 
 ## ホストでの品質ゲート
 
