@@ -1,6 +1,15 @@
 defmodule ResoniteLinkEx.Shapes do
   @moduledoc """
-  基本図形生成のメッセージ組み立てと送信を行うモジュール。
+  基本図形（cube, sphere など）を生成するための高水準モジュールです。
+
+  このモジュールは次の流れを一括で実行します。
+  - 図形種別から必要な `componentType` を決定
+  - Slot/Component 生成に必要なIDを採番
+  - 複数の送信メッセージを組み立て
+  - Transport経由で順番に送信
+
+  「この位置にこの名前で図形を出したい」という要求を、
+  低レイヤ詳細を隠して実行できるようにするのが目的です。
   """
 
   alias ResoniteLinkEx.Client

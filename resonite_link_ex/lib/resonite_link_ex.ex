@@ -1,6 +1,17 @@
 defmodule ResoniteLinkEx do
   @moduledoc """
-  ResoniteLinkEx の公開エントリポイント。
+  このライブラリの公開入口（Facade）です。
+
+  Resonite 連携でよく使う機能を、分かりやすい関数名でまとめて提供します。
+  具体的には次を扱います。
+  - クライアント起動（`start_client/1`）
+  - 受信レスポンス処理（`receive_response/2`）
+  - オブジェクト移動・削除（`move_slot_by_name/4`, `delete_slot_by_name/3`）
+  - 図形生成（`spawn_shape/3`）
+  - ポート自動検出（`find_resonite_link_port/0`）
+
+  内部には `Client` / `Objects` / `Shapes` / `PortDiscovery` などの専用モジュールがありますが、
+  初学者はまず本モジュールだけを使って開始できます。
   """
 
   alias ResoniteLinkEx.Client
@@ -9,7 +20,7 @@ defmodule ResoniteLinkEx do
   alias ResoniteLinkEx.Shapes
 
   @doc """
-  ResoniteLink クライアントを起動する。
+  Resonite通信用の `Client` プロセスを起動し、以後のAPI呼び出しに使うPIDを返す。
 
   ## Parameters
   - `opts`: クライアント起動オプション。
@@ -26,7 +37,7 @@ defmodule ResoniteLinkEx do
   def start_client(opts \\ []), do: Client.start_link(opts)
 
   @doc """
-  受信レスポンスを処理する。
+  Transportなどで受け取ったレスポンスを `Client` に渡し、pending解決と状態更新を行う。
 
   ## Parameters
   - `client`: `pid()`。
@@ -45,7 +56,7 @@ defmodule ResoniteLinkEx do
   def receive_response(client, response), do: Client.receive_response(client, response)
 
   @doc """
-  `name` で指定した対象を座標移動（位置更新）する。
+  名前で対象オブジェクトを特定し、そのオブジェクトの位置を更新する（推奨API）。
 
   ## Parameters
   - `client_or_transport`: `pid()`。
@@ -70,7 +81,7 @@ defmodule ResoniteLinkEx do
     do: Objects.move_slot_by_name(client_or_transport, name, position, opts)
 
   @doc """
-  `name` で指定した対象を削除する。
+  名前で対象オブジェクトを特定し、そのオブジェクトを削除する（推奨API）。
 
   ## Parameters
   - `client_or_transport`: `pid()`。
@@ -92,7 +103,7 @@ defmodule ResoniteLinkEx do
     do: Objects.delete_slot_by_name(client_or_transport, name, opts)
 
   @doc """
-  互換API。`slot_id` 指定で座標移動（位置更新）する。
+  互換APIとして、`slot_id` を直接指定してオブジェクトの位置を更新する。
 
   ## Parameters
   - `client_or_transport`: `pid()`。
@@ -114,7 +125,7 @@ defmodule ResoniteLinkEx do
     do: Objects.move_slot(client_or_transport, slot_id, position)
 
   @doc """
-  互換API。`slot_id` 指定で削除する。
+  互換APIとして、`slot_id` を直接指定してオブジェクトを削除する。
 
   ## Parameters
   - `client_or_transport`: `pid()`。
@@ -134,7 +145,7 @@ defmodule ResoniteLinkEx do
     do: Objects.delete_slot(client_or_transport, slot_id)
 
   @doc """
-  図形生成メッセージを送信する。
+  指定した図形の生成に必要なメッセージ群を送信し、生成ID情報を返す。
 
   ## Parameters
   - `transport_pid`: `pid()`。
@@ -154,7 +165,7 @@ defmodule ResoniteLinkEx do
   def spawn_shape(transport_pid, shape, opts), do: Shapes.spawn_shape(transport_pid, shape, opts)
 
   @doc """
-  ResoniteLink の待受ポートを検出する。
+  実行中のResoniteLinkが待ち受けているローカルポートを自動検出する。
 
   ## Returns
   - `{:ok, pos_integer()}`: ポート検出成功。
@@ -173,7 +184,7 @@ defmodule ResoniteLinkEx do
   def find_resonite_link_port, do: PortDiscovery.find_resonite_link_port()
 
   @doc """
-  テストや拡張用途向けに、コマンド実行関数を差し替えてポート検出する。
+  テストや拡張向けにコマンド実行関数を差し替えて、同じポート検出ロジックを実行する。
 
   ## Parameters
   - `cmd_fun`: `"ss -ltnp"` 相当の実行関数。

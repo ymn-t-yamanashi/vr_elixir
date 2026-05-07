@@ -1,15 +1,21 @@
 defmodule ResoniteLinkEx.Core do
   @moduledoc """
-  ResoniteLink の基礎コマンドを直接呼び出す低レイヤ API。
+  Resonite の基本コマンドを低レベルで扱うモジュールです。
 
-  `ResoniteLinkEx` がユースケース向け API を提供するのに対して、
-  本モジュールは `$type` 単位で薄く呼び出す用途を想定する。
+  `requestSessionData` / `addSlot` / `updateSlot` など、`$type` 単位のAPIを提供します。
+  ここでは「送信しやすい内部リクエスト形式」を作ることに集中し、実際の送信は行いません。
+
+  使い分けの目安:
+  - 手早く使いたい: `ResoniteLinkEx`（公開入口）を使う
+  - 細かく制御したい: 本モジュールを使う
+
+  高い自由度と引き換えに、payload の妥当性を呼び出し側が意識する必要があります。
   """
 
   alias ResoniteLinkEx.Protocol
 
   @doc """
-  `requestSessionData` を呼び出す。
+  セッション情報取得用の `requestSessionData` リクエストを作成する。
 
   ## Parameters
   - `client`: 呼び出し元ハンドル。現実装では未使用だが将来拡張のため受け取る。
@@ -26,7 +32,7 @@ defmodule ResoniteLinkEx.Core do
   def request_session_data(client), do: call_core(client, "requestSessionData", %{})
 
   @doc """
-  `addSlot` を呼び出す。
+  新しいSlotを作るための `addSlot` リクエストを作成する。
 
   ## Parameters
   - `client`: 呼び出し元ハンドル。
@@ -45,7 +51,7 @@ defmodule ResoniteLinkEx.Core do
   def add_slot(client, payload), do: call_core(client, "addSlot", payload)
 
   @doc """
-  `updateSlot` を呼び出す。
+  既存Slotを更新するための `updateSlot` リクエストを作成する。
 
   ## Parameters
   - `client`: 呼び出し元ハンドル。
@@ -64,7 +70,7 @@ defmodule ResoniteLinkEx.Core do
   def update_slot(client, payload), do: call_core(client, "updateSlot", payload)
 
   @doc """
-  `addComponent` を呼び出す。
+  SlotにComponentを追加するための `addComponent` リクエストを作成する。
 
   ## Parameters
   - `client`: 呼び出し元ハンドル。
@@ -83,7 +89,7 @@ defmodule ResoniteLinkEx.Core do
   def add_component(client, payload), do: call_core(client, "addComponent", payload)
 
   @doc """
-  `updateComponent` を呼び出す。
+  既存Componentを更新するための `updateComponent` リクエストを作成する。
 
   ## Parameters
   - `client`: 呼び出し元ハンドル。
@@ -102,7 +108,7 @@ defmodule ResoniteLinkEx.Core do
   def update_component(client, payload), do: call_core(client, "updateComponent", payload)
 
   @doc """
-  `removeComponent` を呼び出す。
+  Componentを削除するための `removeComponent` リクエストを作成する。
 
   ## Parameters
   - `client`: 呼び出し元ハンドル。
@@ -121,7 +127,7 @@ defmodule ResoniteLinkEx.Core do
   def remove_component(client, payload), do: call_core(client, "removeComponent", payload)
 
   @doc """
-  `removeSlot` を呼び出す。
+  Slotを削除するための `removeSlot` リクエストを作成する。
 
   ## Parameters
   - `client`: 呼び出し元ハンドル。
@@ -140,7 +146,7 @@ defmodule ResoniteLinkEx.Core do
   def remove_slot(client, payload), do: call_core(client, "removeSlot", payload)
 
   @doc """
-  `getSlot` を呼び出す。
+  Slot情報を取得するための `getSlot` リクエストを作成する。
 
   ## Parameters
   - `client`: 呼び出し元ハンドル。

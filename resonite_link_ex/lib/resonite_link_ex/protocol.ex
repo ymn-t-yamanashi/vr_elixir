@@ -1,6 +1,15 @@
 defmodule ResoniteLinkEx.Protocol do
   @moduledoc """
-  ResoniteLink 送受信フォーマットを扱うモジュール。
+  Resonite 通信で使うデータ仕様をまとめたモジュールです。
+
+  主な責務:
+  - 送信可能な `$type` の定義
+  - `$type` ごとの payload 検証
+  - 送信リクエスト（`$type`, `data`, `messageId`）の組み立て
+  - 受信レスポンスの基本検証
+
+  このモジュールを通すことで、上位モジュールは「どのキーが必須か」を
+  毎回意識せずに安全にリクエストを作成できます。
   """
 
   @invalid_request {:error, :invalid_request}

@@ -1,6 +1,15 @@
 defmodule ResoniteLinkEx.PortDiscovery do
   @moduledoc """
-  ResoniteLink の待受ポートをホストの `ss -ltnp` 出力から検出する。
+  ResoniteLink の待受ポートを自動検出するモジュールです。
+
+  Linux の `ss -ltnp` 出力から、条件に合うローカル待受ポートを抽出します。
+  これにより、利用者が手動でポート番号を調べなくても接続準備ができます。
+
+  想定利用シーン:
+  - 開発中にポート番号が毎回変わる
+  - CLI引数なしでサンプルを起動したい
+
+  テストしやすいように、コマンド実行関数や `ss` 存在判定関数を差し替え可能です。
   """
 
   @invalid_request {:error, :invalid_request}

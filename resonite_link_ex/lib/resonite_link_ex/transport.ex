@@ -1,6 +1,15 @@
 defmodule ResoniteLinkEx.Transport do
   @moduledoc """
-  ResoniteLink 向け WebSocket トランスポート層。
+  Resonite との WebSocket 入出力を担当するトランスポート層です。
+
+  主な責務:
+  - WebSocket 接続の開始・維持
+  - map <-> JSON の変換
+  - テキスト受信時のデコードと `Client` への受け渡し
+  - 切断イベントの正規化
+
+  `Client` が状態管理、`Transport` が通信処理という分担で動作します。
+  ネットワーク境界に最も近いモジュールです。
   """
 
   use WebSockex

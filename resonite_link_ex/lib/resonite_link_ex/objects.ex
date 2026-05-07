@@ -1,6 +1,15 @@
 defmodule ResoniteLinkEx.Objects do
   @moduledoc """
-  生成済みオブジェクトの座標移動・削除API。
+  既存オブジェクトを操作するユースケース層モジュールです。
+
+  主な機能:
+  - 名前指定で移動（`move_slot_by_name/4`）
+  - 名前指定で削除（`delete_slot_by_name/3`）
+  - 互換APIとしてID指定の移動・削除（`move_slot/3`, `delete_slot/2`）
+
+  名前指定のときは内部で `NameResolver` を使って `slot_id` を解決し、
+  その後 `Core` でリクエストを作成して送信処理へ渡します。
+  「アプリの操作意図」と「低レイヤ通信」をつなぐ役割のモジュールです。
   """
 
   alias ResoniteLinkEx.Client
@@ -13,7 +22,7 @@ defmodule ResoniteLinkEx.Objects do
   @invalid_request {:error, :invalid_request}
 
   @doc """
-  `name` を解決して `updateSlot` を送信し、座標移動（位置更新）する。
+  名前から対象を解決して位置更新し、オブジェクトを移動する。
 
   ## Parameters
   - `client_or_transport`: `pid()`。
@@ -56,7 +65,7 @@ defmodule ResoniteLinkEx.Objects do
   end
 
   @doc """
-  `name` を解決して `removeSlot` を送信し、対象Slotを削除する。
+  名前から対象を解決して削除し、オブジェクトを消去する。
 
   ## Parameters
   - `client_or_transport`: `pid()`。
@@ -91,7 +100,7 @@ defmodule ResoniteLinkEx.Objects do
   end
 
   @doc """
-  互換API。`slot_id` 指定で `updateSlot` を送信する。
+  互換APIとして `slot_id` 直接指定で位置更新する。
 
   ## Parameters
   - `client_or_transport`: `pid()`。
@@ -123,7 +132,7 @@ defmodule ResoniteLinkEx.Objects do
   def move_slot(_client_or_transport, _slot_id, _position), do: @invalid_request
 
   @doc """
-  互換API。`slot_id` 指定で `removeSlot` を送信する。
+  互換APIとして `slot_id` 直接指定で削除する。
 
   ## Parameters
   - `client_or_transport`: `pid()`。

@@ -1,6 +1,15 @@
 defmodule ResoniteLinkEx.NameResolver do
   @moduledoc """
-  `name` から `slot_id` を解決する共通モジュール。
+  オブジェクト名（`name`）から実ID（`slot_id`）を解決するモジュールです。
+
+  名前指定APIでは最終的に `slot_id` が必要になるため、その橋渡しを行います。
+  このモジュールは次を担当します。
+  - 名前一致する候補スロット一覧の取得
+  - 同名が複数ある場合の絞り込み（`parent_name` 条件）
+  - 最終的に `getSlot` で存在確認
+
+  返り値は `{:ok, slot_id}` または `{:error, reason}` で統一されており、
+  上位の `Objects` モジュールから利用される前提です。
   """
 
   alias ResoniteLinkEx.Client
@@ -10,7 +19,7 @@ defmodule ResoniteLinkEx.NameResolver do
   @invalid_request {:error, :invalid_request}
 
   @doc """
-  `name` と任意の `parent_name` 条件から `slot_id` を解決する。
+  名前（必要なら親名条件つき）から、一意な `slot_id` を解決する。
 
   ## Parameters
   - `client_or_transport`: `pid()` または同等の呼び出し対象。

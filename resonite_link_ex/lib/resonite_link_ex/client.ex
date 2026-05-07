@@ -1,6 +1,15 @@
 defmodule ResoniteLinkEx.Client do
   @moduledoc """
-  ResoniteLink 接続管理のクライアントモジュール。
+  Resonite 通信の状態管理を担当する `GenServer` モジュールです。
+
+  このモジュールの主な責務は次のとおりです。
+  - 接続中かどうかの判定
+  - 送信リクエストの生成と pending 管理（`messageId` と待機プロセスの対応付け）
+  - 受信レスポンスの解決と最終レスポンス保持
+  - タイムアウトや切断時のエラー通知
+
+  `Transport` がネットワーク入出力を行い、`Client` がアプリの状態を管理する、という分担です。
+  リクエストとレスポンスを安全に対応付ける中核レイヤです。
   """
 
   alias ResoniteLinkEx.Protocol
