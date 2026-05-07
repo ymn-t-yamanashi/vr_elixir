@@ -26,28 +26,6 @@ defmodule ResoniteLinkEx do
   def start_client(opts \\ []), do: Client.start_link(opts)
 
   @doc """
-  `$type` と `payload` を指定して命令を呼び出す。
-
-  ## Parameters
-  - `client`: `pid()`。
-  - `type`: `String.t()`。
-  - `payload`: `map()`。
-
-  ## Returns
-  - `{:ok, map()}`: リクエスト生成成功。
-  - `{:error, term()}`: 入力不正や未接続など。
-
-  ## Examples
-      iex> payload = %{parent_id: "Root", name: "BoxA"}
-      iex> {:ok, client} = ResoniteLinkEx.start_client([])
-      iex> match?({:ok, %{type: "addSlot", payload: ^payload}}, ResoniteLinkEx.Core.add_slot(client, payload))
-      true
-  """
-  @spec call(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-  @deprecated "将来削除予定です。既知コマンドは ResoniteLinkEx.Core.* を利用してください。"
-  def call(client, type, payload), do: Client.call(client, type, payload)
-
-  @doc """
   受信レスポンスを処理する。
 
   ## Parameters

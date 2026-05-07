@@ -15,7 +15,6 @@ ResoniteLink 用の Elixir クライアント最小実装です。
 ## 主な公開 API
 
 - `ResoniteLinkEx.start_client/1`
-- `ResoniteLinkEx.call/3`
 - `ResoniteLinkEx.receive_response/2`
 - `ResoniteLinkEx.Core.request_session_data/1`
 - `ResoniteLinkEx.Core.add_slot/2`
