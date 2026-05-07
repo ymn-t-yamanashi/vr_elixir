@@ -29,7 +29,7 @@ defmodule Sprint3MoveDeleteByNameSample do
         client_pid: client
       )
 
-    IO.inspect(ids, label: "生成結果")
+    IO.puts("生成結果: #{inspect(ids)}")
     Process.sleep(1_000)
 
     resolver = build_resolver(%{@sample_name => ids.slot_id})
@@ -42,7 +42,7 @@ defmodule Sprint3MoveDeleteByNameSample do
         resolve_slot_id_fun: resolver
       )
 
-    IO.inspect(move_result, label: "座標移動結果")
+    IO.puts("座標移動結果: #{inspect(move_result)}")
     Process.sleep(1_000)
 
     IO.puts("[3/3] name 指定で削除します")
@@ -50,7 +50,7 @@ defmodule Sprint3MoveDeleteByNameSample do
     delete_result =
       ResoniteLinkEx.delete_slot_by_name(transport, @sample_name, resolve_slot_id_fun: resolver)
 
-    IO.inspect(delete_result, label: "削除結果")
+    IO.puts("削除結果: #{inspect(delete_result)}")
     Process.sleep(1_000)
 
     :ok

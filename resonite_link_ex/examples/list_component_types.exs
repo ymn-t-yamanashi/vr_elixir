@@ -15,6 +15,7 @@ defmodule ListComponentTypes do
     wait_session_ready(client, 20)
 
     message_id = UUID.uuid4()
+
     request = %{
       "$type" => "getComponentTypeList",
       "messageId" => message_id,
@@ -27,7 +28,7 @@ defmodule ListComponentTypes do
     response = wait_last_response(client, message_id, 40)
     raw = wait_raw_response(client, message_id, 40)
     IO.puts("=== raw last_response ===")
-    IO.inspect(raw, pretty: true, limit: :infinity)
+    IO.puts(inspect(raw, pretty: true, limit: :infinity))
     print_summary(response)
     :ok
   end
@@ -81,7 +82,9 @@ defmodule ListComponentTypes do
   defp normalize_response(response) do
     data =
       response
-      |> Enum.reject(fn {k, _v} -> k in ["$type", "sourceMessageId", "messageId", "success", "errorInfo"] end)
+      |> Enum.reject(fn {k, _v} ->
+        k in ["$type", "sourceMessageId", "messageId", "success", "errorInfo"]
+      end)
       |> Map.new()
 
     Map.put(response, "data", data)
@@ -97,7 +100,7 @@ defmodule ListComponentTypes do
 
   defp print_summary(response) do
     IO.puts("=== getComponentTypeList failed ===")
-    IO.inspect(response, pretty: true, limit: :infinity)
+    IO.puts(inspect(response, pretty: true, limit: :infinity))
   end
 
   defp parse_port(args) do
