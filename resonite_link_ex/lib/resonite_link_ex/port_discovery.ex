@@ -9,6 +9,14 @@ defmodule ResoniteLinkEx.PortDiscovery do
 
   @doc """
   `ss -ltnp` を実行して ResoniteLink のポートを1つ返す。
+
+  ## Returns
+  - `{:ok, pos_integer()}`: ポート検出成功。
+  - `{:error, :ss_not_found | :command_failed | :port_not_found}`: 検出失敗。
+
+  ## Examples
+      result = ResoniteLinkEx.PortDiscovery.find_resonite_link_port()
+      is_tuple(result) and tuple_size(result) == 2
   """
   @spec find_resonite_link_port() ::
           {:ok, pos_integer()}
@@ -21,6 +29,18 @@ defmodule ResoniteLinkEx.PortDiscovery do
 
   @doc """
   テストや拡張用途向けに、コマンド実行関数を差し替えてポート検出する。
+
+  ## Parameters
+  - `cmd_fun`: `"ss -ltnp"` 相当の実行関数。
+
+  ## Returns
+  - `{:ok, pos_integer()}`: ポート検出成功。
+  - `{:error, :invalid_request | :ss_not_found | :command_failed | :port_not_found}`: 検出失敗。
+
+  ## Examples
+      cmd_fun = fn "ss", ["-ltnp"] -> {"LISTEN 0 500 127.0.0.1:55555 0.0.0.0:* users:((\"dotnet\",pid=1,fd=1))", 0} end
+      ResoniteLinkEx.PortDiscovery.find_resonite_link_port(cmd_fun)
+      {:ok, 55555}
   """
   @spec find_resonite_link_port(cmd_fun()) ::
           {:ok, pos_integer()}
@@ -36,6 +56,19 @@ defmodule ResoniteLinkEx.PortDiscovery do
 
   @doc """
   テストや拡張用途向けに、`ss` の存在判定も差し替えてポート検出する。
+
+  ## Parameters
+  - `cmd_fun`: `"ss -ltnp"` 相当の実行関数。
+  - `ss_exists_fun`: `ss` の存在可否を返す関数。
+
+  ## Returns
+  - `{:ok, pos_integer()}`: ポート検出成功。
+  - `{:error, :invalid_request | :ss_not_found | :command_failed | :port_not_found}`: 検出失敗。
+
+  ## Examples
+      cmd_fun = fn "ss", ["-ltnp"] -> {"LISTEN 0 500 127.0.0.1:55555 0.0.0.0:* users:((\"dotnet\",pid=1,fd=1))", 0} end
+      ResoniteLinkEx.PortDiscovery.find_resonite_link_port(cmd_fun, fn -> true end)
+      {:ok, 55555}
   """
   @spec find_resonite_link_port(cmd_fun(), (-> boolean())) ::
           {:ok, pos_integer()}

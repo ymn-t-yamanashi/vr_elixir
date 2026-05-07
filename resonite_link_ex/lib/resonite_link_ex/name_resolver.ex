@@ -10,6 +10,21 @@ defmodule ResoniteLinkEx.NameResolver do
 
   @doc """
   `name` と任意の `parent_name` 条件から `slot_id` を解決する。
+
+  ## Parameters
+  - `client_or_transport`: `pid()` または同等の呼び出し対象。
+  - `name`: 解決対象の名前。
+  - `opts`: `find_slots_fun` などのオプション。
+
+  ## Returns
+  - `{:ok, String.t()}`: 解決成功した `slot_id`。
+  - `{:error, :not_found | :ambiguous_name | :invalid_request | term()}`: 解決失敗。
+
+  ## Examples
+      find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
+      get_slot_fun = fn _client, _slot_id -> {:ok, %{}} end
+      ResoniteLinkEx.NameResolver.resolve_slot_id(:client, "CubeA", find_slots_fun: find_slots_fun, get_slot_fun: get_slot_fun)
+      {:ok, "slot_a"}
   """
   @spec resolve_slot_id(term(), String.t(), keyword()) ::
           {:ok, String.t()} | {:error, :not_found | :ambiguous_name | :invalid_request | term()}

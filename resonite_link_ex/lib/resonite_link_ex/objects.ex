@@ -13,6 +13,22 @@ defmodule ResoniteLinkEx.Objects do
 
   @doc """
   `name` を解決して `updateSlot` を送信し、座標移動（位置更新）する。
+
+  ## Parameters
+  - `client_or_transport`: `pid()`。
+  - `name`: 対象 Slot 名。
+  - `position`: `%{"x" => number(), "y" => number(), "z" => number()}`。
+  - `opts`: 解決関数差し替えなどのオプション。
+
+  ## Returns
+  - `{:ok, map()}`: 送信成功。
+  - `{:error, :invalid_request | :not_found | :ambiguous_name | term()}`: 入力不正または解決失敗。
+
+  ## Examples
+      resolver = fn _client, _name, _opts -> {:ok, "slot_a"} end
+      position = %{"x" => 1, "y" => 2, "z" => 3}
+      match?({:ok, %{"$type" => "updateSlot"}}, ResoniteLinkEx.Objects.move_slot_by_name(client, "CubeA", position, resolve_slot_id_fun: resolver))
+      true
   """
   @spec move_slot_by_name(term(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, :invalid_request | :not_found | :ambiguous_name | term()}
@@ -37,6 +53,20 @@ defmodule ResoniteLinkEx.Objects do
 
   @doc """
   `name` を解決して `removeSlot` を送信し、対象Slotを削除する。
+
+  ## Parameters
+  - `client_or_transport`: `pid()`。
+  - `name`: 対象 Slot 名。
+  - `opts`: 解決関数差し替えなどのオプション。
+
+  ## Returns
+  - `{:ok, map()}`: 送信成功。
+  - `{:error, :invalid_request | :not_found | :ambiguous_name | term()}`: 入力不正または解決失敗。
+
+  ## Examples
+      resolver = fn _client, _name, _opts -> {:ok, "slot_a"} end
+      match?({:ok, %{"$type" => "removeSlot"}}, ResoniteLinkEx.Objects.delete_slot_by_name(client, "CubeA", resolve_slot_id_fun: resolver))
+      true
   """
   @spec delete_slot_by_name(term(), String.t(), keyword()) ::
           {:ok, map()} | {:error, :invalid_request | :not_found | :ambiguous_name | term()}
@@ -57,6 +87,20 @@ defmodule ResoniteLinkEx.Objects do
 
   @doc """
   互換API。`slot_id` 指定で `updateSlot` を送信する。
+
+  ## Parameters
+  - `client_or_transport`: `pid()`。
+  - `slot_id`: 対象 Slot ID。
+  - `position`: `%{"x" => number(), "y" => number(), "z" => number()}`。
+
+  ## Returns
+  - `{:ok, map()}`: 送信成功。
+  - `{:error, term()}`: 入力不正または送信失敗。
+
+  ## Examples
+      position = %{"x" => 1, "y" => 2, "z" => 3}
+      match?({:ok, %{"$type" => "updateSlot"}}, ResoniteLinkEx.Objects.move_slot(client, "slot_a", position))
+      true
   """
   @spec move_slot(term(), String.t(), map()) :: {:ok, map()} | {:error, term()}
   def move_slot(client_or_transport, slot_id, position)
@@ -72,6 +116,18 @@ defmodule ResoniteLinkEx.Objects do
 
   @doc """
   互換API。`slot_id` 指定で `removeSlot` を送信する。
+
+  ## Parameters
+  - `client_or_transport`: `pid()`。
+  - `slot_id`: 対象 Slot ID。
+
+  ## Returns
+  - `{:ok, map()}`: 送信成功。
+  - `{:error, term()}`: 入力不正または送信失敗。
+
+  ## Examples
+      match?({:ok, %{"$type" => "removeSlot"}}, ResoniteLinkEx.Objects.delete_slot(client, "slot_a"))
+      true
   """
   @spec delete_slot(term(), String.t()) :: {:ok, map()} | {:error, term()}
   def delete_slot(client_or_transport, slot_id) when is_binary(slot_id) and slot_id != "" do
