@@ -40,10 +40,11 @@ defmodule ResoniteLinkEx do
   ## Examples
       iex> payload = %{parent_id: "Root", name: "BoxA"}
       iex> {:ok, client} = ResoniteLinkEx.start_client([])
-      iex> match?({:ok, %{"$type" => "addSlot"}}, ResoniteLinkEx.call(client, "addSlot", payload))
+      iex> match?({:ok, %{type: "addSlot", payload: ^payload}}, ResoniteLinkEx.Core.add_slot(client, payload))
       true
   """
   @spec call(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
+  @deprecated "将来削除予定です。既知コマンドは ResoniteLinkEx.Core.* を利用してください。"
   def call(client, type, payload), do: Client.call(client, type, payload)
 
   @doc """
