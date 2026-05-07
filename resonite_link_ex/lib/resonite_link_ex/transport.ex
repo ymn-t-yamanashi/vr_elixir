@@ -14,6 +14,18 @@ defmodule ResoniteLinkEx.Transport do
 
   @doc """
   トランスポートプロセスを起動する。
+
+  ## Parameters
+  - `client_pid`: 紐づく Client PID。
+  - `opts`: 接続オプション。
+
+  ## Returns
+  - `{:ok, pid()}`: 起動成功。
+  - `{:error, term()}`: 起動失敗。
+
+  ## Examples
+      ResoniteLinkEx.Transport.start_link(:bad, [])
+      {:error, :invalid_request}
   """
   @spec start_link(pid(), keyword()) :: {:ok, pid()} | {:error, term()}
   def start_link(client_pid, opts) when is_pid(client_pid) and is_list(opts) do
@@ -25,6 +37,16 @@ defmodule ResoniteLinkEx.Transport do
 
   @doc """
   トランスポートに紐づく client_pid を返す。
+
+  ## Parameters
+  - `transport_pid`: トランスポートPID。
+
+  ## Returns
+  - `{:ok, pid()} | {:error, :invalid_request}`: 解決結果。
+
+  ## Examples
+      ResoniteLinkEx.Transport.client_pid(:bad)
+      {:error, :invalid_request}
   """
   @spec client_pid(pid()) :: {:ok, pid()} | {:error, :invalid_request}
   def client_pid(transport_pid) when transport_pid == self(), do: {:error, :invalid_request}
@@ -44,6 +66,17 @@ defmodule ResoniteLinkEx.Transport do
 
   @doc """
   map ペイロードを JSON として送信する。
+
+  ## Parameters
+  - `transport_pid`: トランスポートPID。
+  - `payload`: 送信 payload。
+
+  ## Returns
+  - `:ok | {:error, :invalid_request}`: 送信結果。
+
+  ## Examples
+      ResoniteLinkEx.Transport.send_json(:bad, %{})
+      {:error, :invalid_request}
   """
   @spec send_json(pid(), map()) :: :ok | {:error, :invalid_request}
   def send_json(transport_pid, payload) when is_pid(transport_pid) and is_map(payload) do
@@ -60,6 +93,16 @@ defmodule ResoniteLinkEx.Transport do
 
   @doc """
   送信 map を JSON 文字列にエンコードする。
+
+  ## Parameters
+  - `payload`: 送信 payload。
+
+  ## Returns
+  - `{:ok, String.t()} | {:error, :invalid_request}`: 変換結果。
+
+  ## Examples
+      match?({:ok, _json}, ResoniteLinkEx.Transport.encode_outbound(%{"k" => "v"}))
+      true
   """
   @spec encode_outbound(map()) :: {:ok, String.t()} | {:error, :invalid_request}
   def encode_outbound(payload) when is_map(payload), do: Jason.encode(payload)
@@ -67,6 +110,16 @@ defmodule ResoniteLinkEx.Transport do
 
   @doc """
   受信 JSON 文字列を map にデコードする。
+
+  ## Parameters
+  - `json`: 受信 JSON。
+
+  ## Returns
+  - `{:ok, map()} | {:error, :decode_error}`: デコード結果。
+
+  ## Examples
+      ResoniteLinkEx.Transport.decode_inbound(~s({"k":"v"}))
+      {:ok, %{"k" => "v"}}
   """
   @spec decode_inbound(String.t()) :: {:ok, map()} | {:error, :decode_error}
   def decode_inbound(json) when is_binary(json) do
@@ -80,6 +133,16 @@ defmodule ResoniteLinkEx.Transport do
 
   @doc """
   切断理由を Client 側のトリガーへ変換する。
+
+  ## Parameters
+  - `reason`: 切断理由。
+
+  ## Returns
+  - `:close_frame | :tcp_error`: 正規化された理由。
+
+  ## Examples
+      ResoniteLinkEx.Transport.map_disconnect_reason({:remote, 1000, "ok"})
+      :close_frame
   """
   @spec map_disconnect_reason(term()) :: :close_frame | :tcp_error
   def map_disconnect_reason({:remote, _code, _reason}), do: :close_frame
@@ -89,6 +152,16 @@ defmodule ResoniteLinkEx.Transport do
 
   @doc """
   接続 URL を生成する。
+
+  ## Parameters
+  - `opts`: `host` / `port` / `path` 設定。
+
+  ## Returns
+  - `String.t()`: WebSocket URL。
+
+  ## Examples
+      ResoniteLinkEx.Transport.build_url(host: "localhost", port: 12512, path: "")
+      "ws://localhost:12512"
   """
   @spec build_url(keyword()) :: String.t()
   def build_url(opts) do
@@ -108,6 +181,18 @@ defmodule ResoniteLinkEx.Transport do
   @impl true
   @doc """
   WebSocket 接続確立時に初期ハンドシェイクを送信する。
+
+  ## Parameters
+  - `_conn`: 接続情報。
+  - `state`: 現在状態。
+
+  ## Returns
+  - `{:ok, map()}`: 更新後状態。
+
+  ## Examples
+      state = %{client_pid: self(), opts: []}
+      match?({:ok, _}, ResoniteLinkEx.Transport.handle_connect(:connected, state))
+      true
   """
   def handle_connect(_conn, state) do
     _ = Client.set_reconnecting(state.client_pid, false)
@@ -118,6 +203,18 @@ defmodule ResoniteLinkEx.Transport do
   @impl true
   @doc """
   内部キャストを受け取り、初期要求または任意テキスト送信を処理する。
+
+  ## Parameters
+  - `message`: キャストメッセージ。
+  - `state`: 現在状態。
+
+  ## Returns
+  - `{:reply, {:text, String.t()}, map()}`: 送信フレームと状態。
+
+  ## Examples
+      state = %{client_pid: self(), opts: []}
+      match?({:reply, {:text, _}, _}, ResoniteLinkEx.Transport.handle_cast({:send_text, "hello"}, state))
+      true
   """
   def handle_cast(:send_initial_session_request, state) do
     {:ok, request} = Protocol.encode_request("requestSessionData", %{})
@@ -134,6 +231,18 @@ defmodule ResoniteLinkEx.Transport do
   @impl true
   @doc """
   受信フレームをデコードして Client へ連携する。
+
+  ## Parameters
+  - `frame`: 受信フレーム。
+  - `state`: 現在状態。
+
+  ## Returns
+  - `{:ok, map()}`: 更新後状態。
+
+  ## Examples
+      state = %{client_pid: self(), opts: []}
+      ResoniteLinkEx.Transport.handle_frame({:binary, <<1, 2>>}, state)
+      {:ok, state}
   """
   def handle_frame({:text, message}, state) do
     case decode_inbound(message) do
@@ -149,6 +258,18 @@ defmodule ResoniteLinkEx.Transport do
   @impl true
   @doc """
   切断理由を判定して Client へ通知する。
+
+  ## Parameters
+  - `reason`: 切断理由。
+  - `state`: 現在状態。
+
+  ## Returns
+  - `{:ok, map()}`: 更新後状態。
+
+  ## Examples
+      state = %{client_pid: self(), opts: []}
+      ResoniteLinkEx.Transport.handle_disconnect(:unknown, state)
+      {:ok, state}
   """
   def handle_disconnect(reason, state) do
     _ = Client.handle_disconnect(state.client_pid, map_disconnect_reason(reason))
