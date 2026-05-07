@@ -4,6 +4,7 @@ defmodule ResoniteLinkEx.Objects do
   """
 
   alias ResoniteLinkEx.Client
+  alias ResoniteLinkEx.Core
   alias ResoniteLinkEx.NameResolver
   alias ResoniteLinkEx.Transport
 
@@ -165,11 +166,33 @@ defmodule ResoniteLinkEx.Objects do
         end
 
       {:error, :invalid_request} ->
-        Client.call(target_pid, type, payload)
+        call_core_fallback(target_pid, type, payload)
     end
   end
 
   defp send_command(_target_pid, _type, _payload), do: @invalid_request
+
+  defp call_core_fallback(target_pid, "updateSlot", payload) do
+    case Core.update_slot(target_pid, payload) do
+      {:ok, %{type: "updateSlot", payload: core_payload}} ->
+        {:ok, %{"$type" => "updateSlot", "data" => core_payload}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp call_core_fallback(target_pid, "removeSlot", payload) do
+    case Core.remove_slot(target_pid, payload) do
+      {:ok, %{type: "removeSlot", payload: core_payload}} ->
+        {:ok, %{"$type" => "removeSlot", "data" => core_payload}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp call_core_fallback(_target_pid, _type, _payload), do: @invalid_request
 
   defp build_transport_request("updateSlot", %{slot_id: slot_id, position: position})
        when is_binary(slot_id) and is_map(position) do

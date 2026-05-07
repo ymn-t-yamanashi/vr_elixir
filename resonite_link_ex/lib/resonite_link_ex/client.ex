@@ -3,8 +3,8 @@ defmodule ResoniteLinkEx.Client do
   ResoniteLink 接続管理のクライアントモジュール。
   """
 
+  alias ResoniteLinkEx.Core
   alias ResoniteLinkEx.Protocol
-  alias ResoniteLinkEx.Scene
 
   use GenServer
   require Logger
@@ -68,7 +68,7 @@ defmodule ResoniteLinkEx.Client do
   """
   @spec send_command(pid(), String.t(), map()) :: {:ok, map()} | {:error, term()}
   def send_command(client, type, payload) do
-    if connected?(client), do: Scene.call(client, type, payload), else: @not_connected
+    if connected?(client), do: call_core_command(client, type, payload), else: @not_connected
   end
 
   @doc """
@@ -193,6 +193,23 @@ defmodule ResoniteLinkEx.Client do
         @request_timeout
     end
   end
+
+  defp call_core_command(client, "requestSessionData", payload) when payload == %{},
+    do: Core.request_session_data(client)
+
+  defp call_core_command(client, "addSlot", payload), do: Core.add_slot(client, payload)
+  defp call_core_command(client, "updateSlot", payload), do: Core.update_slot(client, payload)
+  defp call_core_command(client, "addComponent", payload), do: Core.add_component(client, payload)
+
+  defp call_core_command(client, "updateComponent", payload),
+    do: Core.update_component(client, payload)
+
+  defp call_core_command(client, "removeComponent", payload),
+    do: Core.remove_component(client, payload)
+
+  defp call_core_command(client, "removeSlot", payload), do: Core.remove_slot(client, payload)
+  defp call_core_command(client, "getSlot", payload), do: Core.get_slot(client, payload)
+  defp call_core_command(_client, _type, _payload), do: @invalid_request
 
   @doc """
   `messageId` と待機元 pid を pending へ登録する。

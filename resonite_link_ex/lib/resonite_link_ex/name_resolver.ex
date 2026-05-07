@@ -4,6 +4,7 @@ defmodule ResoniteLinkEx.NameResolver do
   """
 
   alias ResoniteLinkEx.Client
+  alias ResoniteLinkEx.Core
   alias ResoniteLinkEx.Transport
 
   @invalid_request {:error, :invalid_request}
@@ -112,7 +113,7 @@ defmodule ResoniteLinkEx.NameResolver do
              do: {:ok, request}
 
       {:error, :invalid_request} ->
-        Client.call(client_or_transport, "getSlot", %{slot_id: slot_id})
+        Core.get_slot(client_or_transport, %{slot_id: slot_id})
     end
   end
 end
