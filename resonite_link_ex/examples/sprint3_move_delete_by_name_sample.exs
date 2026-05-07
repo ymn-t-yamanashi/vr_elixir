@@ -56,7 +56,7 @@ defmodule Sprint3MoveDeleteByNameSample do
   end
 
   defp build_resolver(name_to_slot_id) when is_map(name_to_slot_id) do
-    fn _client_or_transport, name, _opts ->
+    fn _client, name, _opts ->
       case Map.fetch(name_to_slot_id, name) do
         {:ok, slot_id} ->
           {:ok, slot_id}

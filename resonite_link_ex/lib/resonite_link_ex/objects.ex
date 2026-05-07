@@ -24,7 +24,7 @@ defmodule ResoniteLinkEx.Objects do
   名前から対象を解決して位置更新し、オブジェクトを移動する。
 
   ## Parameters
-  - `client_or_transport`: `pid()`。
+  - `client`: `pid()`。
   - `name`: 対象 Slot 名。
   - `position`: `%{"x" => number(), "y" => number(), "z" => number()}`。
   - `opts`: 解決関数差し替えなどのオプション。
@@ -41,25 +41,25 @@ defmodule ResoniteLinkEx.Objects do
   """
   @spec move_slot_by_name(term(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, :invalid_request | :not_found | :ambiguous_name | term()}
-  def move_slot_by_name(client_or_transport, name, position, opts \\ [])
+  def move_slot_by_name(client, name, position, opts \\ [])
 
-  def move_slot_by_name(_client_or_transport, name, _position, _opts)
+  def move_slot_by_name(_client, name, _position, _opts)
       when not is_binary(name) or name == "",
       do: @invalid_request
 
-  def move_slot_by_name(_client_or_transport, _name, position, _opts) when not is_map(position),
+  def move_slot_by_name(_client, _name, position, _opts) when not is_map(position),
     do: @invalid_request
 
-  def move_slot_by_name(_client_or_transport, _name, _position, opts) when not is_list(opts),
+  def move_slot_by_name(_client, _name, _position, opts) when not is_list(opts),
     do: @invalid_request
 
-  def move_slot_by_name(client_or_transport, name, position, opts) do
+  def move_slot_by_name(client, name, position, opts) do
     with :ok <- validate_position(position),
-         {:ok, slot_id} <- resolve_slot_id(client_or_transport, name, opts) do
+         {:ok, slot_id} <- resolve_slot_id(client, name, opts) do
       request_via_core =
-        Core.update_slot(client_or_transport, %{slot_id: slot_id, position: position})
+        Core.update_slot(client, %{slot_id: slot_id, position: position})
 
-      dispatch_core_request(client_or_transport, request_via_core)
+      dispatch_core_request(client, request_via_core)
     end
   end
 
@@ -67,7 +67,7 @@ defmodule ResoniteLinkEx.Objects do
   名前から対象を解決して削除し、オブジェクトを消去する。
 
   ## Parameters
-  - `client_or_transport`: `pid()`。
+  - `client`: `pid()`。
   - `name`: 対象 Slot 名。
   - `opts`: 解決関数差し替えなどのオプション。
 
@@ -82,19 +82,19 @@ defmodule ResoniteLinkEx.Objects do
   """
   @spec delete_slot_by_name(term(), String.t(), keyword()) ::
           {:ok, map()} | {:error, :invalid_request | :not_found | :ambiguous_name | term()}
-  def delete_slot_by_name(client_or_transport, name, opts \\ [])
+  def delete_slot_by_name(client, name, opts \\ [])
 
-  def delete_slot_by_name(_client_or_transport, name, _opts)
+  def delete_slot_by_name(_client, name, _opts)
       when not is_binary(name) or name == "",
       do: @invalid_request
 
-  def delete_slot_by_name(_client_or_transport, _name, opts) when not is_list(opts),
+  def delete_slot_by_name(_client, _name, opts) when not is_list(opts),
     do: @invalid_request
 
-  def delete_slot_by_name(client_or_transport, name, opts) do
-    with {:ok, slot_id} <- resolve_slot_id(client_or_transport, name, opts) do
-      request_via_core = Core.remove_slot(client_or_transport, %{slot_id: slot_id})
-      dispatch_core_request(client_or_transport, request_via_core)
+  def delete_slot_by_name(client, name, opts) do
+    with {:ok, slot_id} <- resolve_slot_id(client, name, opts) do
+      request_via_core = Core.remove_slot(client, %{slot_id: slot_id})
+      dispatch_core_request(client, request_via_core)
     end
   end
 
@@ -102,7 +102,7 @@ defmodule ResoniteLinkEx.Objects do
   互換APIとして `slot_id` 直接指定で位置更新する。
 
   ## Parameters
-  - `client_or_transport`: `pid()`。
+  - `client`: `pid()`。
   - `slot_id`: 対象 Slot ID。
   - `position`: `%{"x" => number(), "y" => number(), "z" => number()}`。
 
@@ -116,25 +116,25 @@ defmodule ResoniteLinkEx.Objects do
       true
   """
   @spec move_slot(term(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-  def move_slot(client_or_transport, slot_id, position)
+  def move_slot(client, slot_id, position)
       when is_binary(slot_id) and slot_id != "" and is_map(position) do
     Logger.warning("[deprecated] move_slot/3 は将来削除予定です。move_slot_by_name/4 を利用してください")
 
     with :ok <- validate_position(position) do
       request_via_core =
-        Core.update_slot(client_or_transport, %{slot_id: slot_id, position: position})
+        Core.update_slot(client, %{slot_id: slot_id, position: position})
 
-      dispatch_core_request(client_or_transport, request_via_core)
+      dispatch_core_request(client, request_via_core)
     end
   end
 
-  def move_slot(_client_or_transport, _slot_id, _position), do: @invalid_request
+  def move_slot(_client, _slot_id, _position), do: @invalid_request
 
   @doc """
   互換APIとして `slot_id` 直接指定で削除する。
 
   ## Parameters
-  - `client_or_transport`: `pid()`。
+  - `client`: `pid()`。
   - `slot_id`: 対象 Slot ID。
 
   ## Returns
@@ -146,19 +146,19 @@ defmodule ResoniteLinkEx.Objects do
       true
   """
   @spec delete_slot(term(), String.t()) :: {:ok, map()} | {:error, term()}
-  def delete_slot(client_or_transport, slot_id) when is_binary(slot_id) and slot_id != "" do
+  def delete_slot(client, slot_id) when is_binary(slot_id) and slot_id != "" do
     Logger.warning("[deprecated] delete_slot/2 は将来削除予定です。delete_slot_by_name/3 を利用してください")
-    request_via_core = Core.remove_slot(client_or_transport, %{slot_id: slot_id})
-    dispatch_core_request(client_or_transport, request_via_core)
+    request_via_core = Core.remove_slot(client, %{slot_id: slot_id})
+    dispatch_core_request(client, request_via_core)
   end
 
-  def delete_slot(_client_or_transport, _slot_id), do: @invalid_request
+  def delete_slot(_client, _slot_id), do: @invalid_request
 
-  defp resolve_slot_id(client_or_transport, name, opts) do
+  defp resolve_slot_id(client, name, opts) do
     resolver_fun = Keyword.get(opts, :resolve_slot_id_fun, &NameResolver.resolve_slot_id/3)
 
     if is_function(resolver_fun, 3) do
-      resolver_fun.(client_or_transport, name, opts)
+      resolver_fun.(client, name, opts)
     else
       @invalid_request
     end

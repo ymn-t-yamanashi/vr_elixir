@@ -5,7 +5,7 @@
 - 各APIで解決ロジックを重複実装しない。
 
 ## 公開I/F
-- `resolve_slot_id(client_or_transport, name, opts \\ [])`
+- `resolve_slot_id(client, name, opts \\ [])`
   - `name`: `String.t()`（必須）
   - `opts`:
     - `:parent_name`（任意、同名候補の絞り込み用）

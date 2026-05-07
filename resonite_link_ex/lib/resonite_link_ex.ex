@@ -59,7 +59,7 @@ defmodule ResoniteLinkEx do
   名前で対象オブジェクトを特定し、そのオブジェクトの位置を更新する（推奨API）。
 
   ## Parameters
-  - `client_or_transport`: `pid()`。
+  - `client`: `pid()`。
   - `name`: `String.t()`。
   - `position`: `%{"x" => number(), "y" => number(), "z" => number()}`。
   - `opts`: 解決関数差し替えなどのオプション。
@@ -77,14 +77,14 @@ defmodule ResoniteLinkEx do
   """
   @spec move_slot_by_name(term(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def move_slot_by_name(client_or_transport, name, position, opts \\ []),
-    do: Objects.move_slot_by_name(client_or_transport, name, position, opts)
+  def move_slot_by_name(client, name, position, opts \\ []),
+    do: Objects.move_slot_by_name(client, name, position, opts)
 
   @doc """
   名前で対象オブジェクトを特定し、そのオブジェクトを削除する（推奨API）。
 
   ## Parameters
-  - `client_or_transport`: `pid()`。
+  - `client`: `pid()`。
   - `name`: `String.t()`。
   - `opts`: 解決関数差し替えなどのオプション。
 
@@ -99,14 +99,14 @@ defmodule ResoniteLinkEx do
       true
   """
   @spec delete_slot_by_name(term(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
-  def delete_slot_by_name(client_or_transport, name, opts \\ []),
-    do: Objects.delete_slot_by_name(client_or_transport, name, opts)
+  def delete_slot_by_name(client, name, opts \\ []),
+    do: Objects.delete_slot_by_name(client, name, opts)
 
   @doc """
   互換APIとして、`slot_id` を直接指定してオブジェクトの位置を更新する。
 
   ## Parameters
-  - `client_or_transport`: `pid()`。
+  - `client`: `pid()`。
   - `slot_id`: `String.t()`。
   - `position`: `%{"x" => number(), "y" => number(), "z" => number()}`。
 
@@ -121,14 +121,14 @@ defmodule ResoniteLinkEx do
       true
   """
   @spec move_slot(term(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-  def move_slot(client_or_transport, slot_id, position),
-    do: Objects.move_slot(client_or_transport, slot_id, position)
+  def move_slot(client, slot_id, position),
+    do: Objects.move_slot(client, slot_id, position)
 
   @doc """
   互換APIとして、`slot_id` を直接指定してオブジェクトを削除する。
 
   ## Parameters
-  - `client_or_transport`: `pid()`。
+  - `client`: `pid()`。
   - `slot_id`: `String.t()`。
 
   ## Returns
@@ -141,8 +141,8 @@ defmodule ResoniteLinkEx do
       true
   """
   @spec delete_slot(term(), String.t()) :: {:ok, map()} | {:error, term()}
-  def delete_slot(client_or_transport, slot_id),
-    do: Objects.delete_slot(client_or_transport, slot_id)
+  def delete_slot(client, slot_id),
+    do: Objects.delete_slot(client, slot_id)
 
   @doc """
   指定した図形の生成に必要なメッセージ群を送信し、生成ID情報を返す。

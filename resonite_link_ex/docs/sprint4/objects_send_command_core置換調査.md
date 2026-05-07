@@ -10,7 +10,7 @@
 ## 現状（Objects.send_command の役割）
 `ResoniteLinkEx.Objects` 内の `send_command/3` は、以下を実行している。
 
-1. `client_or_transport` が Transport PID の場合
+1. `client` が Transport PID の場合
 - `Transport.client_pid/1` で client を解決
 - `build_transport_request/2` で送信用 JSON map を組み立て
 - `Client.register_pending/3` を登録
@@ -33,10 +33,10 @@
 `Objects` 内の4箇所は、コマンド種別としては以下に対応する。
 
 - `send_command(..., "updateSlot", %{slot_id: slot_id, position: position})`
-  -> `Core.update_slot(client_or_transport, %{slot_id: slot_id, position: position})`
+  -> `Core.update_slot(client, %{slot_id: slot_id, position: position})`
 
 - `send_command(..., "removeSlot", %{slot_id: slot_id})`
-  -> `Core.remove_slot(client_or_transport, %{slot_id: slot_id})`
+  -> `Core.remove_slot(client, %{slot_id: slot_id})`
 
 対象箇所:
 - `lib/resonite_link_ex/objects.ex:51`
