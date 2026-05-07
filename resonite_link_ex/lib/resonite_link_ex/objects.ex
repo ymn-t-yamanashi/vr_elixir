@@ -48,7 +48,10 @@ defmodule ResoniteLinkEx.Objects do
   def move_slot_by_name(client_or_transport, name, position, opts) do
     with :ok <- validate_position(position),
          {:ok, slot_id} <- resolve_slot_id(client_or_transport, name, opts) do
-      send_command(client_or_transport, "updateSlot", %{slot_id: slot_id, position: position})
+      request_via_core =
+        Core.update_slot(client_or_transport, %{slot_id: slot_id, position: position})
+
+      dispatch_core_request(client_or_transport, request_via_core)
     end
   end
 
@@ -82,7 +85,8 @@ defmodule ResoniteLinkEx.Objects do
 
   def delete_slot_by_name(client_or_transport, name, opts) do
     with {:ok, slot_id} <- resolve_slot_id(client_or_transport, name, opts) do
-      send_command(client_or_transport, "removeSlot", %{slot_id: slot_id})
+      request_via_core = Core.remove_slot(client_or_transport, %{slot_id: slot_id})
+      dispatch_core_request(client_or_transport, request_via_core)
     end
   end
 
@@ -109,7 +113,10 @@ defmodule ResoniteLinkEx.Objects do
     Logger.warning("[deprecated] move_slot/3 は将来削除予定です。move_slot_by_name/4 を利用してください")
 
     with :ok <- validate_position(position) do
-      send_command(client_or_transport, "updateSlot", %{slot_id: slot_id, position: position})
+      request_via_core =
+        Core.update_slot(client_or_transport, %{slot_id: slot_id, position: position})
+
+      dispatch_core_request(client_or_transport, request_via_core)
     end
   end
 
@@ -133,7 +140,8 @@ defmodule ResoniteLinkEx.Objects do
   @spec delete_slot(term(), String.t()) :: {:ok, map()} | {:error, term()}
   def delete_slot(client_or_transport, slot_id) when is_binary(slot_id) and slot_id != "" do
     Logger.warning("[deprecated] delete_slot/2 は将来削除予定です。delete_slot_by_name/3 を利用してください")
-    send_command(client_or_transport, "removeSlot", %{slot_id: slot_id})
+    request_via_core = Core.remove_slot(client_or_transport, %{slot_id: slot_id})
+    dispatch_core_request(client_or_transport, request_via_core)
   end
 
   def delete_slot(_client_or_transport, _slot_id), do: @invalid_request
@@ -154,47 +162,53 @@ defmodule ResoniteLinkEx.Objects do
 
   defp validate_position(_position), do: @invalid_request
 
-  defp send_command(target_pid, type, payload) when is_pid(target_pid) do
+  defp dispatch_core_request(target_pid, {:ok, %{type: _type, payload: _payload} = core_request})
+       when is_pid(target_pid) do
     case Transport.client_pid(target_pid) do
-      {:ok, client_pid} ->
-        with {:ok, request} <- build_transport_request(type, payload),
-             :ok <- Client.register_pending(client_pid, request["messageId"], self()),
-             :ok <- Transport.send_json(target_pid, request) do
-          {:ok, request}
-        else
-          {:error, reason} -> {:error, reason}
-        end
-
-      {:error, :invalid_request} ->
-        call_core_fallback(target_pid, type, payload)
+      {:ok, client_pid} -> send_over_transport(target_pid, client_pid, core_request)
+      {:error, :invalid_request} -> normalize_core_result(core_request)
     end
   end
 
-  defp send_command(_target_pid, _type, _payload), do: @invalid_request
+  defp dispatch_core_request(
+         _target_pid,
+         {:ok, %{type: _type, payload: _payload}}
+       ),
+       do: @invalid_request
 
-  defp call_core_fallback(target_pid, "updateSlot", payload) do
-    case Core.update_slot(target_pid, payload) do
-      {:ok, %{type: "updateSlot", payload: core_payload}} ->
-        {:ok, %{"$type" => "updateSlot", "data" => core_payload}}
+  defp dispatch_core_request(_target_pid, {:error, reason}), do: {:error, reason}
+  defp dispatch_core_request(_target_pid, _unknown), do: @invalid_request
 
-      {:error, reason} ->
-        {:error, reason}
+  defp send_over_transport(target_pid, client_pid, %{type: type, payload: payload}) do
+    with :ok <- validate_transport_payload(type, payload),
+         {:ok, request} <- encode_objects_transport_request(type, payload),
+         :ok <- Client.register_pending(client_pid, request["messageId"], self()),
+         :ok <- Transport.send_json(target_pid, request) do
+      {:ok, request}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp call_core_fallback(target_pid, "removeSlot", payload) do
-    case Core.remove_slot(target_pid, payload) do
-      {:ok, %{type: "removeSlot", payload: core_payload}} ->
-        {:ok, %{"$type" => "removeSlot", "data" => core_payload}}
+  defp normalize_core_result(%{type: type, payload: payload})
+       when is_binary(type) and is_map(payload),
+       do: {:ok, %{"$type" => type, "data" => payload}}
 
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
+  defp normalize_core_result(_core_request), do: @invalid_request
 
-  defp call_core_fallback(_target_pid, _type, _payload), do: @invalid_request
+  defp validate_transport_payload("updateSlot", %{slot_id: slot_id, position: position})
+       when is_binary(slot_id) and is_map(position),
+       do: :ok
 
-  defp build_transport_request("updateSlot", %{slot_id: slot_id, position: position})
+  defp validate_transport_payload("removeSlot", %{slot_id: slot_id}) when is_binary(slot_id),
+    do: :ok
+
+  defp validate_transport_payload("updateSlot", _payload), do: @invalid_request
+  defp validate_transport_payload("removeSlot", _payload), do: @invalid_request
+  defp validate_transport_payload(_type, _payload), do: :ok
+
+  # Objects API の transport 経路は既存Wire形式を維持する。
+  defp encode_objects_transport_request("updateSlot", %{slot_id: slot_id, position: position})
        when is_binary(slot_id) and is_map(position) do
     {:ok,
      %{
@@ -207,9 +221,10 @@ defmodule ResoniteLinkEx.Objects do
      }}
   end
 
-  defp build_transport_request("removeSlot", %{slot_id: slot_id}) when is_binary(slot_id) do
+  defp encode_objects_transport_request("removeSlot", %{slot_id: slot_id})
+       when is_binary(slot_id) do
     {:ok, %{"messageId" => UUID.uuid4(), "$type" => "removeSlot", "slotId" => slot_id}}
   end
 
-  defp build_transport_request(_type, _payload), do: @invalid_request
+  defp encode_objects_transport_request(_type, _payload), do: @invalid_request
 end
