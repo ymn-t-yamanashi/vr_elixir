@@ -17,6 +17,10 @@ defmodule ResoniteLinkEx.Core do
   ## Returns
   - `{:ok, map()}`: リクエスト生成成功。
   - `{:error, term()}`: 入力不正などで失敗。
+
+  ## Examples
+      iex> ResoniteLinkEx.Core.request_session_data(client)
+      {:ok, _request}
   """
   @spec request_session_data(term()) :: {:ok, map()} | {:error, term()}
   def request_session_data(client), do: Scene.call(client, "requestSessionData", %{})
@@ -31,6 +35,11 @@ defmodule ResoniteLinkEx.Core do
   ## Returns
   - `{:ok, map()}`: リクエスト生成成功。
   - `{:error, term()}`: 入力不正などで失敗。
+
+  ## Examples
+      iex> payload = %{parent_id: "Root", name: "BoxA"}
+      iex> ResoniteLinkEx.Core.add_slot(client, payload)
+      {:ok, _request}
   """
   @spec add_slot(term(), map()) :: {:ok, map()} | {:error, term()}
   def add_slot(client, payload), do: Scene.call(client, "addSlot", payload)
@@ -45,6 +54,11 @@ defmodule ResoniteLinkEx.Core do
   ## Returns
   - `{:ok, map()}`: リクエスト生成成功。
   - `{:error, term()}`: 入力不正などで失敗。
+
+  ## Examples
+      iex> payload = %{slot_id: "SlotA", position: %{x: 0, y: 1, z: 0}}
+      iex> ResoniteLinkEx.Core.update_slot(client, payload)
+      {:ok, _request}
   """
   @spec update_slot(term(), map()) :: {:ok, map()} | {:error, term()}
   def update_slot(client, payload), do: Scene.call(client, "updateSlot", payload)
@@ -59,6 +73,11 @@ defmodule ResoniteLinkEx.Core do
   ## Returns
   - `{:ok, map()}`: リクエスト生成成功。
   - `{:error, term()}`: 入力不正などで失敗。
+
+  ## Examples
+      iex> payload = %{slot_id: "SlotA", component_type: "FrooxEngine.BoxCollider"}
+      iex> ResoniteLinkEx.Core.add_component(client, payload)
+      {:ok, _request}
   """
   @spec add_component(term(), map()) :: {:ok, map()} | {:error, term()}
   def add_component(client, payload), do: Scene.call(client, "addComponent", payload)
@@ -73,6 +92,11 @@ defmodule ResoniteLinkEx.Core do
   ## Returns
   - `{:ok, map()}`: リクエスト生成成功。
   - `{:error, term()}`: 入力不正などで失敗。
+
+  ## Examples
+      iex> payload = %{component_id: "CompA", members: %{"Enabled" => true}}
+      iex> ResoniteLinkEx.Core.update_component(client, payload)
+      {:ok, _request}
   """
   @spec update_component(term(), map()) :: {:ok, map()} | {:error, term()}
   def update_component(client, payload), do: Scene.call(client, "updateComponent", payload)
@@ -87,6 +111,11 @@ defmodule ResoniteLinkEx.Core do
   ## Returns
   - `{:ok, map()}`: リクエスト生成成功。
   - `{:error, term()}`: 入力不正などで失敗。
+
+  ## Examples
+      iex> payload = %{component_id: "CompA"}
+      iex> ResoniteLinkEx.Core.remove_component(client, payload)
+      {:ok, _request}
   """
   @spec remove_component(term(), map()) :: {:ok, map()} | {:error, term()}
   def remove_component(client, payload), do: Scene.call(client, "removeComponent", payload)
@@ -101,6 +130,11 @@ defmodule ResoniteLinkEx.Core do
   ## Returns
   - `{:ok, map()}`: リクエスト生成成功。
   - `{:error, term()}`: 入力不正などで失敗。
+
+  ## Examples
+      iex> payload = %{slot_id: "SlotA"}
+      iex> ResoniteLinkEx.Core.remove_slot(client, payload)
+      {:ok, _request}
   """
   @spec remove_slot(term(), map()) :: {:ok, map()} | {:error, term()}
   def remove_slot(client, payload), do: Scene.call(client, "removeSlot", payload)
@@ -115,6 +149,11 @@ defmodule ResoniteLinkEx.Core do
   ## Returns
   - `{:ok, map()}`: リクエスト生成成功。
   - `{:error, term()}`: 入力不正などで失敗。
+
+  ## Examples
+      iex> payload = %{slot_id: "SlotA"}
+      iex> ResoniteLinkEx.Core.get_slot(client, payload)
+      {:ok, _request}
   """
   @spec get_slot(term(), map()) :: {:ok, map()} | {:error, term()}
   def get_slot(client, payload), do: Scene.call(client, "getSlot", payload)
