@@ -6,7 +6,7 @@ defmodule ResoniteLinkEx.Core do
   本モジュールは `$type` 単位で薄く呼び出す用途を想定する。
   """
 
-  alias ResoniteLinkEx.Scene
+  alias ResoniteLinkEx.Protocol
 
   @doc """
   `requestSessionData` を呼び出す。
@@ -23,7 +23,7 @@ defmodule ResoniteLinkEx.Core do
       {:ok, _request}
   """
   @spec request_session_data(term()) :: {:ok, map()} | {:error, term()}
-  def request_session_data(client), do: Scene.call(client, "requestSessionData", %{})
+  def request_session_data(client), do: call_core(client, "requestSessionData", %{})
 
   @doc """
   `addSlot` を呼び出す。
@@ -42,7 +42,7 @@ defmodule ResoniteLinkEx.Core do
       {:ok, _request}
   """
   @spec add_slot(term(), map()) :: {:ok, map()} | {:error, term()}
-  def add_slot(client, payload), do: Scene.call(client, "addSlot", payload)
+  def add_slot(client, payload), do: call_core(client, "addSlot", payload)
 
   @doc """
   `updateSlot` を呼び出す。
@@ -61,7 +61,7 @@ defmodule ResoniteLinkEx.Core do
       {:ok, _request}
   """
   @spec update_slot(term(), map()) :: {:ok, map()} | {:error, term()}
-  def update_slot(client, payload), do: Scene.call(client, "updateSlot", payload)
+  def update_slot(client, payload), do: call_core(client, "updateSlot", payload)
 
   @doc """
   `addComponent` を呼び出す。
@@ -80,7 +80,7 @@ defmodule ResoniteLinkEx.Core do
       {:ok, _request}
   """
   @spec add_component(term(), map()) :: {:ok, map()} | {:error, term()}
-  def add_component(client, payload), do: Scene.call(client, "addComponent", payload)
+  def add_component(client, payload), do: call_core(client, "addComponent", payload)
 
   @doc """
   `updateComponent` を呼び出す。
@@ -99,7 +99,7 @@ defmodule ResoniteLinkEx.Core do
       {:ok, _request}
   """
   @spec update_component(term(), map()) :: {:ok, map()} | {:error, term()}
-  def update_component(client, payload), do: Scene.call(client, "updateComponent", payload)
+  def update_component(client, payload), do: call_core(client, "updateComponent", payload)
 
   @doc """
   `removeComponent` を呼び出す。
@@ -118,7 +118,7 @@ defmodule ResoniteLinkEx.Core do
       {:ok, _request}
   """
   @spec remove_component(term(), map()) :: {:ok, map()} | {:error, term()}
-  def remove_component(client, payload), do: Scene.call(client, "removeComponent", payload)
+  def remove_component(client, payload), do: call_core(client, "removeComponent", payload)
 
   @doc """
   `removeSlot` を呼び出す。
@@ -137,7 +137,7 @@ defmodule ResoniteLinkEx.Core do
       {:ok, _request}
   """
   @spec remove_slot(term(), map()) :: {:ok, map()} | {:error, term()}
-  def remove_slot(client, payload), do: Scene.call(client, "removeSlot", payload)
+  def remove_slot(client, payload), do: call_core(client, "removeSlot", payload)
 
   @doc """
   `getSlot` を呼び出す。
@@ -156,5 +156,18 @@ defmodule ResoniteLinkEx.Core do
       {:ok, _request}
   """
   @spec get_slot(term(), map()) :: {:ok, map()} | {:error, term()}
-  def get_slot(client, payload), do: Scene.call(client, "getSlot", payload)
+  def get_slot(client, payload), do: call_core(client, "getSlot", payload)
+
+  defp call_core(_client, type, _payload) when not is_binary(type), do: {:error, :invalid_request}
+  defp call_core(_client, _type, payload) when not is_map(payload), do: {:error, :invalid_request}
+
+  defp call_core(_client, type, payload) do
+    case Protocol.encode_request(type, payload) do
+      {:ok, %{"$type" => encoded_type, "data" => encoded_payload}} ->
+        {:ok, %{type: encoded_type, payload: encoded_payload}}
+
+      _ ->
+        {:error, :invalid_request}
+    end
+  end
 end
