@@ -8,6 +8,10 @@ defmodule ResoniteLinkEx.MixProject do
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       test_coverage: [ignore_modules: [Mix.Tasks.Check.Docs]],
+      docs: [
+        main: "readme",
+        extras: ["README.md"]
+      ],
       deps: deps()
     ]
   end
@@ -25,6 +29,7 @@ defmodule ResoniteLinkEx.MixProject do
     [
       {:websockex, "~> 0.4"},
       {:elixir_uuid, "~> 1.2"},
+      {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
