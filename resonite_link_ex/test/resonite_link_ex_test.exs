@@ -20,18 +20,6 @@ defmodule ResoniteLinkExTest do
     assert {:error, :invalid_request} = ResoniteLinkEx.receive_response(:not_pid, %{})
   end
 
-  test "get_slot/2 は getSlot 呼び出しを委譲する" do
-    assert {:ok, pid} = ResoniteLinkEx.start_client()
-
-    assert {:ok,
-            %{"$type" => "getSlot", "data" => %{slot_id: "SlotA"}, "messageId" => _message_id}} =
-             ResoniteLinkEx.get_slot(pid, "SlotA")
-  end
-
-  test "get_slot/2 は不正引数で invalid_request を返す" do
-    assert {:error, :invalid_request} = ResoniteLinkEx.get_slot(self(), :bad)
-  end
-
   test "move_slot_by_name/4 は Objects.move_slot_by_name/4 を委譲する" do
     assert {:ok, pid} = ResoniteLinkEx.start_client()
     resolver = fn _client, _name, _opts -> {:ok, "SlotA"} end

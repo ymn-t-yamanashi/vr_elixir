@@ -47,28 +47,6 @@ defmodule ResoniteLinkEx do
   def call(client, type, payload), do: Client.call(client, type, payload)
 
   @doc """
-  Slot ID を指定して `getSlot` を呼び出す。
-
-  ## Parameters
-  - `client`: `pid()`。
-  - `slot_id`: `String.t()`。
-
-  ## Returns
-  - `{:ok, map()}`: リクエスト生成成功。
-  - `{:error, :invalid_request | term()}`: 入力不正など。
-
-  ## Examples
-      iex> {:ok, client} = ResoniteLinkEx.start_client([])
-      iex> match?({:ok, %{"$type" => "getSlot"}}, ResoniteLinkEx.get_slot(client, "SlotA"))
-      true
-  """
-  @spec get_slot(pid(), String.t()) :: {:ok, map()} | {:error, term()}
-  def get_slot(client, slot_id) when is_binary(slot_id),
-    do: call(client, "getSlot", %{slot_id: slot_id})
-
-  def get_slot(_client, _slot_id), do: {:error, :invalid_request}
-
-  @doc """
   受信レスポンスを処理する。
 
   ## Parameters
