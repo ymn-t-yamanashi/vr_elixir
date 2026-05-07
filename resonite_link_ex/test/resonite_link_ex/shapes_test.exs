@@ -3,7 +3,6 @@ defmodule ResoniteLinkEx.ShapesTest do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Shapes
-  alias ResoniteLinkEx.Transport
 
   describe "component_type/1" do
     test "7図形の componentType を返す" do
@@ -161,7 +160,7 @@ defmodule ResoniteLinkEx.ShapesTest do
       assert {:ok, client} = Client.start_link([])
 
       assert {:ok, transport} =
-               Transport.start_link(client, host: "localhost", port: port, path: "")
+               Client.start_link(client, host: "localhost", port: port, path: "")
 
       send_fun = fn _transport_pid, _payload -> :ok end
 

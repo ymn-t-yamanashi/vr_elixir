@@ -146,7 +146,7 @@ defmodule ResoniteLinkEx.NameResolverTest do
     assert {:ok, client} = ResoniteLinkEx.start_client()
 
     assert {:ok, transport} =
-             ResoniteLinkEx.Transport.start_link(client, host: "localhost", port: port)
+             ResoniteLinkEx.Client.start_link(client, host: "localhost", port: port)
 
     find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
 

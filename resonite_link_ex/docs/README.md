@@ -24,7 +24,7 @@ ResoniteLinkEx は、Elixir から ResoniteLink に接続して以下を行う�
 ```elixir
 {:ok, client} = ResoniteLinkEx.start_client()
 {:ok, port} = ResoniteLinkEx.find_resonite_link_port()
-{:ok, transport} = ResoniteLinkEx.Transport.start_link(client, host: "localhost", port: port, path: "")
+{:ok, transport} = ResoniteLinkEx.Client.start_link(client, host: "localhost", port: port, path: "")
 
 # 例: cube を生成
 {:ok, _ids} =

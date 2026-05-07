@@ -7,7 +7,6 @@ defmodule Sprint3MoveDeleteByNameSample do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Shapes
-  alias ResoniteLinkEx.Transport
 
   @host "localhost"
   @sample_name "Sprint3Cube"
@@ -16,7 +15,7 @@ defmodule Sprint3MoveDeleteByNameSample do
     port = parse_port(System.argv())
 
     {:ok, client} = ResoniteLinkEx.start_client()
-    {:ok, transport} = Transport.start_link(client, host: @host, port: port, path: "")
+    {:ok, transport} = Client.start_link(client, host: @host, port: port, path: "")
 
     wait_session_ready(client, 30)
     ensure_resonite_link_ex_slot(transport, client)

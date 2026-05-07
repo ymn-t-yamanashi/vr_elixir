@@ -3,7 +3,6 @@ defmodule ResoniteLinkEx.ObjectsTest do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Objects
-  alias ResoniteLinkEx.Transport
 
   test "move_slot_by_name/4 は name 解決後に updateSlot を返す" do
     assert {:ok, client} = ResoniteLinkEx.start_client()
@@ -91,7 +90,7 @@ defmodule ResoniteLinkEx.ObjectsTest do
     assert {:ok, client} = Client.start_link([])
 
     assert {:ok, transport} =
-             Transport.start_link(client, host: "localhost", port: port, path: "")
+             Client.start_link(client, host: "localhost", port: port, path: "")
 
     resolver = fn _client, _name, _opts -> {:ok, "slot_a"} end
     position = %{"x" => 1, "y" => 2, "z" => 3}
@@ -113,7 +112,7 @@ defmodule ResoniteLinkEx.ObjectsTest do
     assert {:ok, client} = Client.start_link([])
 
     assert {:ok, transport} =
-             Transport.start_link(client, host: "localhost", port: port, path: "")
+             Client.start_link(client, host: "localhost", port: port, path: "")
 
     resolver = fn _client, _name, _opts -> {:ok, 1} end
     position = %{"x" => 1, "y" => 2, "z" => 3}

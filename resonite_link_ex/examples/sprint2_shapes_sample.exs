@@ -7,7 +7,6 @@ defmodule Sprint2ShapesSample do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Shapes
-  alias ResoniteLinkEx.Transport
 
   @host "localhost"
 
@@ -17,7 +16,7 @@ defmodule Sprint2ShapesSample do
 
     # 2) クライアントとトランスポートを起動する
     {:ok, client} = ResoniteLinkEx.start_client()
-    {:ok, transport} = Transport.start_link(client, host: @host, port: port, path: "")
+    {:ok, transport} = Client.start_link(client, host: @host, port: port, path: "")
 
     # 3) セッション準備完了を待つ
     wait_session_ready(client, 30)

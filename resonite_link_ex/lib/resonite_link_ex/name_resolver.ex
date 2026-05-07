@@ -14,7 +14,6 @@ defmodule ResoniteLinkEx.NameResolver do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Core
-  alias ResoniteLinkEx.Transport
 
   @invalid_request {:error, :invalid_request}
 
@@ -113,12 +112,12 @@ defmodule ResoniteLinkEx.NameResolver do
   end
 
   defp default_get_slot(client_or_transport, slot_id) do
-    case Transport.client_pid(client_or_transport) do
+    case Client.client_pid(client_or_transport) do
       {:ok, client_pid} ->
         request = %{"messageId" => UUID.uuid4(), "$type" => "getSlot", "slotId" => slot_id}
 
         with :ok <- Client.register_pending(client_pid, request["messageId"], self()),
-             :ok <- Transport.send_json(client_or_transport, request),
+             :ok <- Client.send_json(client_or_transport, request),
              do: {:ok, request}
 
       {:error, :invalid_request} ->

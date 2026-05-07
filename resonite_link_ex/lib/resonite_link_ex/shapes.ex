@@ -13,7 +13,7 @@ defmodule ResoniteLinkEx.Shapes do
   """
 
   alias ResoniteLinkEx.Client
-  alias ResoniteLinkEx.Transport
+  alias ResoniteLinkEx.Client
 
   @invalid_request {:error, :invalid_request}
   @supported_shapes [:quad, :cube, :sphere, :cylinder, :capsule, :ring, :grid]
@@ -100,7 +100,7 @@ defmodule ResoniteLinkEx.Shapes do
   @spec spawn_shape(pid(), atom(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_shape(transport_pid, shape, opts)
       when is_pid(transport_pid) and is_atom(shape) and is_list(opts) do
-    send_fun = Keyword.get(opts, :send_fun, &Transport.send_json/2)
+    send_fun = Keyword.get(opts, :send_fun, &Client.send_json/2)
     client_pid_opt = Keyword.get(opts, :client_pid, :auto)
 
     with true <- is_function(send_fun, 2),
@@ -267,7 +267,7 @@ defmodule ResoniteLinkEx.Shapes do
   defp resolve_client_pid(_transport_pid, nil), do: {:ok, nil}
 
   defp resolve_client_pid(transport_pid, :auto) do
-    case Transport.client_pid(transport_pid) do
+    case Client.client_pid(transport_pid) do
       {:ok, client_pid} -> {:ok, client_pid}
       {:error, _reason} -> {:error, :invalid_request}
     end

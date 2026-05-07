@@ -15,7 +15,6 @@ defmodule ResoniteLinkEx.Objects do
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Core
   alias ResoniteLinkEx.NameResolver
-  alias ResoniteLinkEx.Transport
 
   require Logger
 
@@ -173,7 +172,7 @@ defmodule ResoniteLinkEx.Objects do
 
   defp dispatch_core_request(target_pid, {:ok, %{type: _type, payload: _payload} = core_request})
        when is_pid(target_pid) do
-    case Transport.client_pid(target_pid) do
+    case Client.client_pid(target_pid) do
       {:ok, client_pid} -> send_over_transport(target_pid, client_pid, core_request)
       {:error, :invalid_request} -> normalize_core_result(core_request)
     end
@@ -192,7 +191,7 @@ defmodule ResoniteLinkEx.Objects do
     with :ok <- validate_transport_payload(type, payload),
          {:ok, request} <- encode_objects_transport_request(type, payload),
          :ok <- Client.register_pending(client_pid, request["messageId"], self()),
-         :ok <- Transport.send_json(target_pid, request) do
+         :ok <- Client.send_json(target_pid, request) do
       {:ok, request}
     else
       {:error, reason} -> {:error, reason}
