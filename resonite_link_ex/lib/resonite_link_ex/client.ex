@@ -13,6 +13,7 @@ defmodule ResoniteLinkEx.Client do
   """
 
   alias ResoniteLinkEx.Protocol
+  alias ResoniteLinkEx.PortDiscovery
 
   use GenServer
   require Logger
@@ -21,6 +22,20 @@ defmodule ResoniteLinkEx.Client do
   @invalid_request {:error, :invalid_request}
   @request_timeout {:error, :request_timeout}
   @default_request_timeout_ms 10_000
+  @default_host "localhost"
+  @default_path ""
+
+  @doc """
+  トランスポートプロセスを既定設定で起動する。
+
+  host は `localhost` を使用し、port は自動検出する。
+  """
+  @spec start_link() :: {:ok, pid()} | {:error, term()}
+  def start_link do
+    with {:ok, port} <- PortDiscovery.find_resonite_link_port() do
+      start_link(host: @default_host, port: port, path: @default_path)
+    end
+  end
 
   @doc """
   クライアントプロセスを起動する。
@@ -521,9 +536,7 @@ defmodule ResoniteLinkEx.Client do
     end
   end
 
-  @default_host "localhost"
   @default_port 12_512
-  @default_path ""
 
   @doc """
   トランスポートプロセスを起動する。

@@ -6,23 +6,17 @@ defmodule Sprint2ShapesSample do
   """
 
   alias ResoniteLinkEx.Client
-  alias ResoniteLinkEx.PortDiscovery
   alias ResoniteLinkEx.Shapes
 
-  @host "localhost"
-
   def run do
-    # 1) ポートを受け取る
-    port = parse_port(System.argv())
+    # 1) トランスポートを起動する（host は localhost、port は自動検出）
+    {:ok, transport} = Client.start_link()
 
-    # 2) トランスポートを起動する（client は内部で自動起動）
-    {:ok, transport} = Client.start_link(host: @host, port: port, path: "")
-
-    # 3) セッション準備完了を待つ
+    # 2) セッション準備完了を待つ
     wait_session_ready(transport, 30)
     ensure_resonite_link_ex_slot(transport)
 
-    # 4) 7図形を順番に生成する
+    # 3) 7図形を順番に生成する
     Shapes.spawn_quad(transport,
       name: "Sprint2Quad",
       position: %{"x" => -1.8, "y" => 1.4, "z" => 0.5},
@@ -126,40 +120,6 @@ defmodule Sprint2ShapesSample do
     else
       Process.sleep(100)
       wait_session_ready(client, retry_left - 1)
-    end
-  end
-
-  defp parse_port(args) do
-    cleaned = Enum.reject(args, &(&1 == "--"))
-
-    case cleaned do
-      ["--port", port_text | _rest] -> parse_port_value(port_text)
-      [port_text | _rest] -> parse_port_value(port_text)
-      [] -> detect_port!()
-    end
-  end
-
-  defp parse_port_value(port_text) do
-    case Integer.parse(port_text) do
-      {port, ""} when port > 0 and port <= 65_535 -> port
-      _ -> raise "ポート指定が不正です。1-65535 の整数を指定してください。例: --port 9341"
-    end
-  end
-
-  defp detect_port! do
-    case PortDiscovery.find_resonite_link_port() do
-      {:ok, port} ->
-        IO.puts("ポート自動検出: #{port}")
-        port
-
-      {:error, :port_not_found} ->
-        raise """
-        ポートを自動検出できませんでした。
-        ResoniteLinkを有効化するか、--port で明示指定してください。
-        """
-
-      {:error, reason} ->
-        raise "ポート検出に失敗しました: #{inspect(reason)}"
     end
   end
 end

@@ -7,16 +7,12 @@ defmodule Sprint3MoveDeleteByNameSample do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Objects
-  alias ResoniteLinkEx.PortDiscovery
   alias ResoniteLinkEx.Shapes
 
-  @host "localhost"
   @sample_name "Sprint3Cube"
 
   def run do
-    port = parse_port(System.argv())
-
-    {:ok, transport} = Client.start_link(host: @host, port: port, path: "")
+    {:ok, transport} = Client.start_link()
 
     wait_session_ready(transport, 30)
     ensure_resonite_link_ex_slot(transport)
@@ -99,37 +95,6 @@ defmodule Sprint3MoveDeleteByNameSample do
     else
       Process.sleep(100)
       wait_session_ready(client, retry_left - 1)
-    end
-  end
-
-  defp parse_port(args) do
-    cleaned = Enum.reject(args, &(&1 == "--"))
-
-    case cleaned do
-      ["--port", port_text | _rest] -> parse_port_value(port_text)
-      [port_text | _rest] -> parse_port_value(port_text)
-      [] -> detect_port!()
-    end
-  end
-
-  defp parse_port_value(port_text) do
-    case Integer.parse(port_text) do
-      {port, ""} when port > 0 and port <= 65_535 -> port
-      _ -> raise "ポート指定が不正です。1-65535 の整数を指定してください。例: --port 9341"
-    end
-  end
-
-  defp detect_port! do
-    case PortDiscovery.find_resonite_link_port() do
-      {:ok, port} ->
-        IO.puts("ポート自動検出: #{port}")
-        port
-
-      {:error, :port_not_found} ->
-        raise "ポートを自動検出できませんでした。--port で明示指定してください。"
-
-      {:error, reason} ->
-        raise "ポート検出に失敗しました: #{inspect(reason)}"
     end
   end
 end
