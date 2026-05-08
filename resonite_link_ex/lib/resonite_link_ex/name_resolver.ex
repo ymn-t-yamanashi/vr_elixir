@@ -14,9 +14,12 @@ defmodule ResoniteLinkEx.NameResolver do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Core
+  alias ResoniteLinkEx.Shapes
 
   @invalid_request {:error, :invalid_request}
   @request_timeout_ms 1_500
+  @ensure_lookup_timeout_ms 1_000
+  @default_parent_name "ResoniteLinkEx"
 
   @doc """
   名前（必要なら親名条件つき）から、一意な `slot_id` を解決する。
@@ -55,6 +58,47 @@ defmodule ResoniteLinkEx.NameResolver do
     end
   end
 
+  @doc """
+  Root 配下に指定名の Slot が無ければ作成し、`slot_id` を返す。
+  """
+  @spec ensure_slot_id(term(), String.t(), keyword()) ::
+          {:ok, String.t()} | {:error, :not_found | :ambiguous_name | :invalid_request | term()}
+  def ensure_slot_id(client, name, opts \\ [])
+
+  def ensure_slot_id(_client, name, _opts)
+      when not is_binary(name) or name == "",
+      do: @invalid_request
+
+  def ensure_slot_id(_client, _name, opts) when not is_list(opts), do: @invalid_request
+
+  def ensure_slot_id(client, name, opts) do
+    resolve_opts =
+      Keyword.put_new(opts, :timeout_ms, @ensure_lookup_timeout_ms)
+
+    case resolve_slot_id(client, name, resolve_opts) do
+      {:ok, slot_id} ->
+        {:ok, slot_id}
+
+      {:error, reason} when reason in [:not_found, :request_timeout] ->
+        create_slot_if_missing(client, name, opts)
+
+      {:error, _reason} ->
+        {:error, :invalid_request}
+    end
+  end
+
+  defp create_slot_if_missing(client, name, opts) do
+    spawn_fun = Keyword.get(opts, :spawn_fun, &default_spawn_fun/2)
+
+    if is_function(spawn_fun, 2) do
+      with {:ok, %{slot_id: slot_id}} <- spawn_fun.(client, name) do
+        {:ok, slot_id}
+      end
+    else
+      @invalid_request
+    end
+  end
+
   defp fetch_slots(client, name, opts) do
     case Keyword.get(opts, :find_slots_fun) do
       find_slots_fun when is_function(find_slots_fun, 3) ->
@@ -68,11 +112,10 @@ defmodule ResoniteLinkEx.NameResolver do
   defp default_find_slots(client, name, opts) do
     timeout_ms = Keyword.get(opts, :timeout_ms, @request_timeout_ms)
     debug? = Keyword.get(opts, :debug, false)
-    parent_name = Keyword.get(opts, :parent_name)
 
     case fetch_root_slot_id(client, timeout_ms) do
       {:ok, root_slot_id} ->
-        walk_slots(client, [root_slot_id], name, timeout_ms, [], debug?, parent_name)
+        find_slots_under_root_only(client, root_slot_id, name, timeout_ms, debug?)
 
       {:error, reason} ->
         {:error, reason}
@@ -89,52 +132,46 @@ defmodule ResoniteLinkEx.NameResolver do
     end
   end
 
-  defp walk_slots(_client, [], _target_name, _timeout_ms, acc, _debug?, _parent_name),
-    do: {:ok, Enum.reverse(acc)}
-
-  defp walk_slots(client, [slot_id | rest], target_name, timeout_ms, acc, debug?, parent_name) do
-    if debug?, do: IO.puts("[NameResolver] visiting slot_id=#{slot_id}")
-
-    with {:ok, response} <-
-           request_over_transport(client, "getSlot", %{"slotId" => slot_id}, timeout_ms),
-         {:ok, slot_name, parent_name, child_ids} <- extract_slot_info(response, slot_id) do
-      if debug?,
-        do:
-          IO.puts("[NameResolver] slot name=#{inspect(slot_name)} children=#{length(child_ids)}")
-
-      next_acc =
-        if slot_name == target_name do
-          [%{slot_id: slot_id, name: slot_name, parent_name: parent_name} | acc]
-        else
-          acc
-        end
-
-      if can_stop_early?(next_acc, parent_name) do
-        {:ok, Enum.reverse(next_acc)}
-      else
-        walk_slots(
-          client,
-          rest ++ child_ids,
-          target_name,
-          timeout_ms,
-          next_acc,
-          debug?,
-          parent_name
-        )
-      end
-    else
-      {:error, :not_found} ->
-        if debug?, do: IO.puts("[NameResolver] slot not found: #{slot_id}")
-        walk_slots(client, rest, target_name, timeout_ms, acc, debug?, parent_name)
-
-      {:error, reason} ->
-        if debug?, do: IO.puts("[NameResolver] request failed: #{inspect(reason)}")
-        {:error, reason}
+  defp find_slots_under_root_only(client, root_slot_id, target_name, timeout_ms, debug?) do
+    with {:ok, root_response} <-
+           request_over_transport(client, "getSlot", %{"slotId" => root_slot_id}, timeout_ms),
+         {:ok, _root_name, _parent_name, child_ids} <-
+           extract_slot_info(root_response, root_slot_id) do
+      check_root_children(client, child_ids, target_name, timeout_ms, [], debug?)
     end
   end
 
-  defp can_stop_early?([_first | _rest], nil), do: true
-  defp can_stop_early?(_matches, _parent_name), do: false
+  defp check_root_children(_client, [], _target_name, _timeout_ms, acc, _debug?),
+    do: {:ok, Enum.reverse(acc)}
+
+  defp check_root_children(client, [child_id | rest], target_name, timeout_ms, acc, debug?) do
+    if debug?, do: IO.puts("[NameResolver] visiting root child slot_id=#{child_id}")
+
+    case request_over_transport(client, "getSlot", %{"slotId" => child_id}, timeout_ms) do
+      {:ok, response} ->
+        {:ok, slot_name, parent_name, _child_ids} = extract_slot_info(response, child_id)
+        if debug?, do: IO.puts("[NameResolver] slot name=#{inspect(slot_name)}")
+
+        next_acc =
+          if slot_name == target_name do
+            [%{slot_id: child_id, name: slot_name, parent_name: parent_name} | acc]
+          else
+            acc
+          end
+
+        if next_acc != [] do
+          {:ok, Enum.reverse(next_acc)}
+        else
+          check_root_children(client, rest, target_name, timeout_ms, next_acc, debug?)
+        end
+
+      {:error, :not_found} ->
+        check_root_children(client, rest, target_name, timeout_ms, acc, debug?)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
 
   defp select_slot_id(slots, parent_name) when is_list(slots) do
     case Enum.filter(slots, &name_slot?/1) do
@@ -335,4 +372,8 @@ defmodule ResoniteLinkEx.NameResolver do
   defp normalize_name_value(%{"value" => value}) when is_binary(value), do: value
   defp normalize_name_value(%{value: value}) when is_binary(value), do: value
   defp normalize_name_value(_value), do: nil
+
+  defp default_spawn_fun(client, name) do
+    Shapes.spawn_cube(client, name: name, parent_name: @default_parent_name)
+  end
 end

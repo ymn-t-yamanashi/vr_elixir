@@ -187,6 +187,46 @@ defmodule ResoniteLinkEx.NameResolverTest do
              )
   end
 
+  test "ensure_slot_id/3 は既存があればそれを返す" do
+    find_slots_fun = fn _client, _name, _opts ->
+      {:ok, [%{slot_id: "slot_existing", name: "ResoniteLinkEx"}]}
+    end
+
+    get_slot_fun = fn _client, _slot_id -> {:ok, %{}} end
+    spawn_fun = fn _client, _name -> {:ok, %{slot_id: "slot_new"}} end
+
+    assert {:ok, "slot_existing"} =
+             NameResolver.ensure_slot_id(:client, "ResoniteLinkEx",
+               find_slots_fun: find_slots_fun,
+               get_slot_fun: get_slot_fun,
+               spawn_fun: spawn_fun
+             )
+  end
+
+  test "ensure_slot_id/3 は見つからない場合に生成して返す" do
+    find_slots_fun = fn _client, _name, _opts -> {:ok, []} end
+    get_slot_fun = fn _client, _slot_id -> {:ok, %{}} end
+    spawn_fun = fn _client, "ResoniteLinkEx" -> {:ok, %{slot_id: "slot_new"}} end
+
+    assert {:ok, "slot_new"} =
+             NameResolver.ensure_slot_id(:client, "ResoniteLinkEx",
+               find_slots_fun: find_slots_fun,
+               get_slot_fun: get_slot_fun,
+               spawn_fun: spawn_fun
+             )
+  end
+
+  test "ensure_slot_id/3 は探索タイムアウトでも生成して返す" do
+    find_slots_fun = fn _client, _name, _opts -> {:error, :request_timeout} end
+    spawn_fun = fn _client, _name -> {:ok, %{slot_id: "slot_new"}} end
+
+    assert {:ok, "slot_new"} =
+             NameResolver.ensure_slot_id(:client, "ResoniteLinkEx",
+               find_slots_fun: find_slots_fun,
+               spawn_fun: spawn_fun
+             )
+  end
+
   defp start_ws_mock_server do
     {:ok, listen_socket} =
       :gen_tcp.listen(0, [:binary, packet: :raw, active: false, reuseaddr: true])
