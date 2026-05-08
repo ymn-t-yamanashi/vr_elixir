@@ -398,6 +398,17 @@ defmodule ResoniteLinkEx.ClientTest do
     Process.exit(server_pid, :normal)
   end
 
+  test "start_link/1 は接続オプションのみでローカルWSサーバーへ接続できる" do
+    {server_pid, port} = start_ws_mock_server()
+    assert {:ok, transport} = Client.start_link(host: "localhost", port: port, path: "")
+
+    assert is_pid(transport)
+    assert {:ok, client} = Client.client_pid(transport)
+    assert is_pid(client)
+    Process.exit(transport, :normal)
+    Process.exit(server_pid, :normal)
+  end
+
   test "send_json/2 は不正引数で invalid_request を返す" do
     assert {:error, :invalid_request} = Client.send_json(:not_pid, %{})
     assert {:error, :invalid_request} = Client.send_json(self(), :not_map)

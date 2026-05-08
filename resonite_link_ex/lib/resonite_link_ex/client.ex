@@ -36,9 +36,22 @@ defmodule ResoniteLinkEx.Client do
       match?({:ok, pid} when is_pid(pid), ResoniteLinkEx.Client.start_link([]))
       true
   """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, [])
+  @spec start_link(keyword()) :: GenServer.on_start() | {:ok, pid()} | {:error, term()}
+  def start_link(opts) when is_list(opts) do
+    if transport_opts?(opts) do
+      with {:ok, client_pid} <- GenServer.start_link(__MODULE__, [], []) do
+        start_link(client_pid, opts)
+      end
+    else
+      GenServer.start_link(__MODULE__, opts, [])
+    end
+  end
+
+  def start_link(_opts), do: {:error, :invalid_request}
+
+  defp transport_opts?(opts) do
+    Keyword.has_key?(opts, :host) or Keyword.has_key?(opts, :port) or
+      Keyword.has_key?(opts, :path)
   end
 
   @doc """
@@ -275,8 +288,21 @@ defmodule ResoniteLinkEx.Client do
       {:error, :invalid_request}
   """
   @spec session_ready?(pid()) :: boolean() | {:error, :invalid_request}
-  def session_ready?(client) when is_pid(client), do: GenServer.call(client, :session_ready)
-  def session_ready?(_client), do: @invalid_request
+  def session_ready?(target_pid) when is_pid(target_pid) do
+    case client_pid(target_pid) do
+      {:ok, client} ->
+        GenServer.call(client, :session_ready)
+
+      {:error, :invalid_request} ->
+        try do
+          GenServer.call(target_pid, :session_ready)
+        catch
+          :exit, _reason -> @invalid_request
+        end
+    end
+  end
+
+  def session_ready?(_target_pid), do: @invalid_request
 
   @doc """
   再接続中なら `true` を返す。

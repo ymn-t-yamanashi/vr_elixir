@@ -15,13 +15,12 @@ defmodule Sprint2ShapesSample do
     # 1) ポートを受け取る
     port = parse_port(System.argv())
 
-    # 2) クライアントとトランスポートを起動する
-    {:ok, client} = Client.start_link([])
-    {:ok, transport} = Client.start_link(client, host: @host, port: port, path: "")
+    # 2) トランスポートを起動する（client は内部で自動起動）
+    {:ok, transport} = Client.start_link(host: @host, port: port, path: "")
 
     # 3) セッション準備完了を待つ
-    wait_session_ready(client, 30)
-    ensure_resonite_link_ex_slot(transport, client)
+    wait_session_ready(transport, 30)
+    ensure_resonite_link_ex_slot(transport)
 
     # 4) 7図形を順番に生成する
     Shapes.spawn_quad(transport,
@@ -93,20 +92,19 @@ defmodule Sprint2ShapesSample do
     raise "図形生成に失敗: shape=#{shape} reason=#{inspect(reason)}"
   end
 
-  defp ensure_resonite_link_ex_slot(transport, client) do
+  defp ensure_resonite_link_ex_slot(transport) do
     warmup_name = "_sprint2_parent_bootstrap_" <> String.slice(UUID.uuid4(), 0, 8)
 
-    do_spawn_warmup(transport, client, warmup_name, 3)
+    do_spawn_warmup(transport, warmup_name, 3)
   end
 
-  defp do_spawn_warmup(_transport, _client, _name, 0), do: :ok
+  defp do_spawn_warmup(_transport, _name, 0), do: :ok
 
-  defp do_spawn_warmup(transport, client, name, retry_left) do
+  defp do_spawn_warmup(transport, name, retry_left) do
     case Shapes.spawn_cube(transport,
            name: name,
            position: %{"x" => 0.0, "y" => -1000.0, "z" => 0.0},
-           scale: %{"x" => 0.01, "y" => 0.01, "z" => 0.01},
-           client_pid: client
+           scale: %{"x" => 0.01, "y" => 0.01, "z" => 0.01}
          ) do
       {:ok, _ids} ->
         Process.sleep(500)
@@ -114,7 +112,7 @@ defmodule Sprint2ShapesSample do
 
       {:error, _reason} ->
         Process.sleep(500)
-        do_spawn_warmup(transport, client, name, retry_left - 1)
+        do_spawn_warmup(transport, name, retry_left - 1)
     end
   end
 

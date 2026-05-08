@@ -16,9 +16,8 @@ mix deps.get
 Resonite 側で ResoniteLink を有効化してから実行します。
 
 ```elixir
-{:ok, client} = ResoniteLinkEx.Client.start_link([])
-{:ok, client} = ResoniteLinkEx.Client.start_link(client, host: "localhost", port: 9342, path: "")
-ResoniteLinkEx.Shapes.spawn_cube(client, name: "SimpleCube")
+{:ok, transport} = ResoniteLinkEx.Client.start_link(host: "localhost", port: 9342, path: "")
+ResoniteLinkEx.Shapes.spawn_cube(transport, name: "SimpleCube")
 ```
 
 ### 3. サンプルを実行する

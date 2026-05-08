@@ -16,18 +16,16 @@ defmodule Sprint3MoveDeleteByNameSample do
   def run do
     port = parse_port(System.argv())
 
-    {:ok, client} = Client.start_link([])
-    {:ok, transport} = Client.start_link(client, host: @host, port: port, path: "")
+    {:ok, transport} = Client.start_link(host: @host, port: port, path: "")
 
-    wait_session_ready(client, 30)
-    ensure_resonite_link_ex_slot(transport, client)
+    wait_session_ready(transport, 30)
+    ensure_resonite_link_ex_slot(transport)
 
     IO.puts("[1/3] cube を生成します name=#{@sample_name}")
 
     {:ok, ids} =
       Shapes.spawn_cube(transport,
-        name: @sample_name,
-        client_pid: client
+        name: @sample_name
       )
 
     IO.puts("生成結果: #{inspect(ids)}")
@@ -67,20 +65,19 @@ defmodule Sprint3MoveDeleteByNameSample do
     end
   end
 
-  defp ensure_resonite_link_ex_slot(transport, client) do
+  defp ensure_resonite_link_ex_slot(transport) do
     warmup_name = "_sprint3_parent_bootstrap_" <> String.slice(UUID.uuid4(), 0, 8)
 
-    do_spawn_warmup(transport, client, warmup_name, 3)
+    do_spawn_warmup(transport, warmup_name, 3)
   end
 
-  defp do_spawn_warmup(_transport, _client, _name, 0), do: :ok
+  defp do_spawn_warmup(_transport, _name, 0), do: :ok
 
-  defp do_spawn_warmup(transport, client, name, retry_left) do
+  defp do_spawn_warmup(transport, name, retry_left) do
     case Shapes.spawn_cube(transport,
            name: name,
            position: %{"x" => 0.0, "y" => -1000.0, "z" => 0.0},
-           scale: %{"x" => 0.01, "y" => 0.01, "z" => 0.01},
-           client_pid: client
+           scale: %{"x" => 0.01, "y" => 0.01, "z" => 0.01}
          ) do
       {:ok, _ids} ->
         Process.sleep(500)
@@ -88,7 +85,7 @@ defmodule Sprint3MoveDeleteByNameSample do
 
       {:error, _reason} ->
         Process.sleep(500)
-        do_spawn_warmup(transport, client, name, retry_left - 1)
+        do_spawn_warmup(transport, name, retry_left - 1)
     end
   end
 
