@@ -17,10 +17,11 @@ defmodule Sample2 do
 
     1..5000
     |> Enum.each(fn _ -> cube(transport, position(), position(), position()) end)
+
     Process.sleep(1000)
   end
 
-  def position() do
+  def position do
     1..50
     |> Enum.random()
   end
@@ -32,10 +33,10 @@ defmodule Sample2 do
       scale: %{"x" => 1, "y" => 1, "z" => 1},
       color: %{"r" => 0.4, "g" => 0.5, "b" => 1, "a" => 1}
     )
+
     # Process.sleep(1)
   end
 end
 
-
 1..100
-|> Enum.each(fn _ ->  Sample2.run() end)
+|> Enum.each(fn _ -> Sample2.run() end)

@@ -21,12 +21,12 @@ defmodule Sample3 do
     end)
   end
 
-  def position() do
+  def position do
     1..50
     |> Enum.random()
   end
 
-  def opts() do
+  def opts do
     [
       name: "Sprint2Cube",
       position: %{"x" => position(), "y" => position(), "z" => position()},

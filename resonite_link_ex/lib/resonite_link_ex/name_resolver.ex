@@ -379,25 +379,25 @@ defmodule ResoniteLinkEx.NameResolver do
 
   @doc """
   Rootに`ResoniteLinkEx`のスロットが存在する場合に削除します。
-  
+
   ## Parameters
   - `client`: `pid()` または同等の呼び出し対象。
   - `opts`: オプションパラメータ。
-  
+
   ## Returns
   - `:ok` or `{:error, reason}`: 成功または失敗。
   """
   @spec clear_resonite_link_ex_slot(term(), keyword()) :: :ok | {:error, term()}
   def clear_resonite_link_ex_slot(client, opts \\ []) do
     timeout_ms = Keyword.get(opts, :timeout_ms, @request_timeout_ms)
-    
+
     case resolve_slot_id(client, "ResoniteLinkEx", opts) do
       {:ok, slot_id} ->
         delete_slot(client, slot_id, timeout_ms)
-        
+
       {:error, :not_found} ->
         :ok
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -407,8 +407,8 @@ defmodule ResoniteLinkEx.NameResolver do
     case Client.client_pid(client) do
       {:ok, client_pid} ->
         request = %{
-          "messageId" => UUID.uuid4(), 
-          "$type" => "removeSlot", 
+          "messageId" => UUID.uuid4(),
+          "$type" => "removeSlot",
           "slotId" => slot_id
         }
 
