@@ -13,6 +13,7 @@ defmodule Sprint3MoveDeleteByNameSample do
 
   def run do
     {:ok, transport} = Client.start_link()
+    ResoniteLinkEx.NameResolver.clear_resonite_link_ex_slot(transport)
     ResoniteLinkEx.NameResolver.ensure_slot_id(transport, "ResoniteLinkEx")
 
     IO.puts("[1/3] cube を生成します name=#{@sample_name}")
