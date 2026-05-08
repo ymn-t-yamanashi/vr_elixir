@@ -12,8 +12,8 @@ defmodule ResoniteLinkEx.Client do
   リクエストとレスポンスを安全に対応付ける中核レイヤです。
   """
 
-  alias ResoniteLinkEx.Protocol
   alias ResoniteLinkEx.PortDiscovery
+  alias ResoniteLinkEx.Protocol
 
   use GenServer
   require Logger
@@ -777,6 +777,11 @@ defmodule ResoniteLinkEx.Client do
   end
 
   def handle_frame(_frame, state), do: {:ok, state}
+
+  @doc """
+  WebSocket の pong フレームを受信したときに状態を維持する。
+  """
+  def handle_pong(_frame, state), do: {:ok, state}
 
   defp normalize_path(path) when is_binary(path) do
     cond do
