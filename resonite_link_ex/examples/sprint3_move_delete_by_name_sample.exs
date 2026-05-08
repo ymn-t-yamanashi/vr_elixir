@@ -6,6 +6,8 @@ defmodule Sprint3MoveDeleteByNameSample do
   """
 
   alias ResoniteLinkEx.Client
+  alias ResoniteLinkEx.Objects
+  alias ResoniteLinkEx.PortDiscovery
   alias ResoniteLinkEx.Shapes
 
   @host "localhost"
