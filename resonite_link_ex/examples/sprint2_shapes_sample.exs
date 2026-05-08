@@ -12,6 +12,10 @@ defmodule Sprint2ShapesSample do
     # 1) トランスポートを起動する（host は localhost、port は自動検出）
     {:ok, transport} = Client.start_link()
 
+    # ResoniteLinkExスロットが既に存在する場合に削除
+    ResoniteLinkEx.NameResolver.clear_resonite_link_ex_slot(transport)
+
+    # 2) ResoniteLinkExスロットを確実に作成
     ResoniteLinkEx.NameResolver.ensure_slot_id(transport, "ResoniteLinkEx")
 
     # 3) 7図形を順番に生成する

@@ -376,4 +376,49 @@ defmodule ResoniteLinkEx.NameResolver do
   defp default_spawn_fun(client, name) do
     Shapes.spawn_cube(client, name: name, parent_name: @default_parent_name)
   end
+
+  @doc """
+  Rootに`ResoniteLinkEx`のスロットが存在する場合に削除します。
+  
+  ## Parameters
+  - `client`: `pid()` または同等の呼び出し対象。
+  - `opts`: オプションパラメータ。
+  
+  ## Returns
+  - `:ok` or `{:error, reason}`: 成功または失敗。
+  """
+  @spec clear_resonite_link_ex_slot(term(), keyword()) :: :ok | {:error, term()}
+  def clear_resonite_link_ex_slot(client, opts \\ []) do
+    timeout_ms = Keyword.get(opts, :timeout_ms, @request_timeout_ms)
+    
+    case resolve_slot_id(client, "ResoniteLinkEx", opts) do
+      {:ok, slot_id} ->
+        delete_slot(client, slot_id, timeout_ms)
+        
+      {:error, :not_found} ->
+        :ok
+        
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp delete_slot(client, slot_id, timeout_ms) do
+    case Client.client_pid(client) do
+      {:ok, client_pid} ->
+        request = %{
+          "messageId" => UUID.uuid4(), 
+          "$type" => "removeSlot", 
+          "slotId" => slot_id
+        }
+
+        with :ok <- Client.register_pending(client_pid, request["messageId"], self()),
+             :ok <- Client.send_json(client, request) do
+          await_response(client_pid, request["messageId"], timeout_ms)
+        end
+
+      {:error, :invalid_request} ->
+        Core.remove_slot(client, %{slot_id: slot_id})
+    end
+  end
 end
