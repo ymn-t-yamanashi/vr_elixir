@@ -11,11 +11,18 @@ mix local.rebar --force
 mix deps.get
 ```
 
-### 2. サンプルを実行する
+### 2. 一番簡単な立方体の出し方
 
 Resonite 側で ResoniteLink を有効化してから実行します。
+
+```elixir
+{:ok, client} = ResoniteLinkEx.Client.start_link([])
+{:ok, client} = ResoniteLinkEx.Client.start_link(client, host: "localhost", port: 9342, path: "")
+ResoniteLinkEx.Shapes.spawn_cube(client, name: "SimpleCube")
+```
+
+### 3. サンプルを実行する
 
 ```bash
 mix run examples/sprint2_shapes_sample.exs
 ```
-
