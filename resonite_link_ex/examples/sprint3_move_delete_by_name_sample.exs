@@ -14,7 +14,7 @@ defmodule Sprint3MoveDeleteByNameSample do
   def run do
     port = parse_port(System.argv())
 
-    {:ok, client} = ResoniteLinkEx.start_client()
+    {:ok, client} = Client.start_link([])
     {:ok, transport} = Client.start_link(client, host: @host, port: port, path: "")
 
     wait_session_ready(client, 30)
@@ -37,9 +37,7 @@ defmodule Sprint3MoveDeleteByNameSample do
     IO.puts("[2/3] name 指定で座標移動します")
 
     move_result =
-      ResoniteLinkEx.move_slot_by_name(transport, @sample_name, position,
-        resolve_slot_id_fun: resolver
-      )
+      Objects.move_slot_by_name(transport, @sample_name, position, resolve_slot_id_fun: resolver)
 
     IO.puts("座標移動結果: #{inspect(move_result)}")
     Process.sleep(1_000)
@@ -47,7 +45,7 @@ defmodule Sprint3MoveDeleteByNameSample do
     IO.puts("[3/3] name 指定で削除します")
 
     delete_result =
-      ResoniteLinkEx.delete_slot_by_name(transport, @sample_name, resolve_slot_id_fun: resolver)
+      Objects.delete_slot_by_name(transport, @sample_name, resolve_slot_id_fun: resolver)
 
     IO.puts("削除結果: #{inspect(delete_result)}")
     Process.sleep(1_000)
@@ -123,7 +121,7 @@ defmodule Sprint3MoveDeleteByNameSample do
   end
 
   defp detect_port! do
-    case ResoniteLinkEx.find_resonite_link_port() do
+    case PortDiscovery.find_resonite_link_port() do
       {:ok, port} ->
         IO.puts("ポート自動検出: #{port}")
         port

@@ -15,7 +15,7 @@ defmodule Sprint2ShapesSample do
     port = parse_port(System.argv())
 
     # 2) クライアントとトランスポートを起動する
-    {:ok, client} = ResoniteLinkEx.start_client()
+    {:ok, client} = Client.start_link([])
     {:ok, transport} = Client.start_link(client, host: @host, port: port, path: "")
 
     # 3) セッション準備完了を待つ
@@ -148,7 +148,7 @@ defmodule Sprint2ShapesSample do
   end
 
   defp detect_port! do
-    case ResoniteLinkEx.find_resonite_link_port() do
+    case PortDiscovery.find_resonite_link_port() do
       {:ok, port} ->
         IO.puts("ポート自動検出: #{port}")
         port

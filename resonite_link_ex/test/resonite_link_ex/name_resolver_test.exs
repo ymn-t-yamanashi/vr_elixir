@@ -1,6 +1,7 @@
 defmodule ResoniteLinkEx.NameResolverTest do
   use ExUnit.Case, async: true
 
+  alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.NameResolver
 
   test "resolve_slot_id/3 は一意な name を解決できる" do
@@ -143,10 +144,10 @@ defmodule ResoniteLinkEx.NameResolverTest do
 
   test "resolve_slot_id/3 は default_get_slot で transport 経路を利用できる" do
     {server_pid, port} = start_ws_mock_server()
-    assert {:ok, client} = ResoniteLinkEx.start_client()
+    assert {:ok, client} = Client.start_link([])
 
     assert {:ok, transport} =
-             ResoniteLinkEx.Client.start_link(client, host: "localhost", port: port)
+             Client.start_link(client, host: "localhost", port: port)
 
     find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
 
@@ -158,7 +159,7 @@ defmodule ResoniteLinkEx.NameResolverTest do
   end
 
   test "resolve_slot_id/3 は default_get_slot の fallback で Client.call を使う" do
-    assert {:ok, client} = ResoniteLinkEx.start_client()
+    assert {:ok, client} = Client.start_link([])
     find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
 
     assert {:ok, "slot_a"} =
@@ -166,7 +167,7 @@ defmodule ResoniteLinkEx.NameResolverTest do
   end
 
   test "resolve_slot_id/3 は default_get_slot の fallback 経路でも解決できる" do
-    assert {:ok, client} = ResoniteLinkEx.start_client()
+    assert {:ok, client} = Client.start_link([])
     {:ok, fake_transport} = Agent.start_link(fn -> %{client_pid: client} end)
     find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
 

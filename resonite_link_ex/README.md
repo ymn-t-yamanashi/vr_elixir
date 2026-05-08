@@ -14,8 +14,6 @@ ResoniteLink 用の Elixir クライアント最小実装です。
 
 ## 主な公開 API
 
-- `ResoniteLinkEx.start_client/1`
-- `ResoniteLinkEx.receive_response/2`
 - `ResoniteLinkEx.Core.request_session_data/1`
 - `ResoniteLinkEx.Core.add_slot/2`
 - `ResoniteLinkEx.Core.update_slot/2`
@@ -24,6 +22,17 @@ ResoniteLink 用の Elixir クライアント最小実装です。
 - `ResoniteLinkEx.Core.remove_component/2`
 - `ResoniteLinkEx.Core.remove_slot/2`
 - `ResoniteLinkEx.Core.get_slot/2`
+- `ResoniteLinkEx.Client.start_link/1`
+- `ResoniteLinkEx.Client.call/3`
+- `ResoniteLinkEx.Objects.move_slot_by_name/4`
+- `ResoniteLinkEx.Objects.delete_slot_by_name/3`
+- `ResoniteLinkEx.Shapes.spawn_shape/3`
+- `ResoniteLinkEx.PortDiscovery.find_resonite_link_port/0`
+
+## 互換API
+
+`ResoniteLinkEx` は既存呼び出しの移行先として残していますが、新規利用の入口にはしません。
+今後は必要に応じて `Client` / `Core` / `Objects` / `Shapes` / `PortDiscovery` を直接使ってください。
 
 ## ホストでの品質ゲート
 
