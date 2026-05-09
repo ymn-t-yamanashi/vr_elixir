@@ -390,18 +390,94 @@ defmodule ResoniteLinkEx.NameResolver do
   @spec clear_resonite_link_ex_slot(term(), keyword()) :: :ok | {:error, term()}
   def clear_resonite_link_ex_slot(client, opts \\ []) do
     timeout_ms = Keyword.get(opts, :timeout_ms, @request_timeout_ms)
+    do_clear_root_children_named_resonitelinkex(client, timeout_ms, 5)
+  end
 
-    case resolve_slot_id(client, "ResoniteLinkEx", opts) do
-      {:ok, slot_id} ->
-        delete_slot(client, slot_id, timeout_ms)
+  defp do_clear_root_children_named_resonitelinkex(client, timeout_ms, retry_left) do
+    with {:ok, root_slot_id} <- fetch_root_slot_id(client, timeout_ms),
+         {:ok, root_response} <-
+           request_over_transport(client, "getSlot", %{"slotId" => root_slot_id}, timeout_ms),
+         %{"data" => root_data} when is_map(root_data) <- root_response do
+      ids =
+        root_data
+        |> pick_children()
+        |> List.wrap()
+        |> Enum.map(&extract_child_name_id/1)
+        |> Enum.filter(&match_resonite_link_ex_name?(&1.name))
+        |> Enum.map(& &1.id)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
 
-      {:error, :not_found} ->
-        :ok
+      _ =
+        Enum.reduce_while(ids, :ok, fn child_id, _acc ->
+          case delete_slot(client, child_id, timeout_ms) do
+            {:ok, _} -> {:cont, :ok}
+            :ok -> {:cont, :ok}
+            {:error, :not_found} -> {:cont, :ok}
+            {:error, _reason} -> {:cont, :ok}
+          end
+        end)
 
-      {:error, reason} ->
-        {:error, reason}
+      # Deletion may be asynchronous, so verify and retry.
+      remaining_ids =
+        case request_over_transport(client, "getSlot", %{"slotId" => root_slot_id}, timeout_ms) do
+          {:ok, %{"data" => refreshed} = _response} when is_map(refreshed) ->
+            refreshed
+            |> pick_children()
+            |> List.wrap()
+            |> Enum.map(&extract_child_name_id/1)
+            |> Enum.filter(&match_resonite_link_ex_name?(&1.name))
+            |> Enum.map(& &1.id)
+            |> Enum.reject(&is_nil/1)
+            |> Enum.uniq()
+
+          _ ->
+            []
+        end
+
+      cond do
+        remaining_ids == [] ->
+          :ok
+
+        retry_left > 0 ->
+          Process.sleep(120)
+          do_clear_root_children_named_resonitelinkex(client, timeout_ms, retry_left - 1)
+
+        true ->
+          {:error, :conflict}
+      end
+    else
+      {:error, :not_found} -> :ok
+      {:error, reason} -> {:error, reason}
+      _ -> :ok
     end
   end
+
+  defp extract_child_name_id(child) do
+    name =
+      child
+      |> pick_value([["name"], ["Name"]])
+      |> normalize_name_value()
+
+    id =
+      case child do
+        %{"slotId" => value} when is_binary(value) -> value
+        %{"SlotId" => value} when is_binary(value) -> value
+        %{"id" => value} when is_binary(value) -> value
+        %{"Id" => value} when is_binary(value) -> value
+        %{slot_id: value} when is_binary(value) -> value
+        %{id: value} when is_binary(value) -> value
+        _ -> nil
+      end
+
+    %{id: id, name: name}
+  end
+
+  defp match_resonite_link_ex_name?(name) when is_binary(name) do
+    String.trim(name) == "ResoniteLinkEx"
+  end
+
+  defp match_resonite_link_ex_name?(_), do: false
 
   defp delete_slot(client, slot_id, timeout_ms) do
     case Client.client_pid(client) do
