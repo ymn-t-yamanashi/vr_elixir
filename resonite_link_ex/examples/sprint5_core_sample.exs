@@ -6,13 +6,16 @@ defmodule Sprint5CoreSample do
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Core
   @target_parent "ResoniteLinkEx"
-  @timeout_ms 2_000
+  @timeout_ms 1_000
   @step_sleep_ms 1_000
   @retry_count 6
 
   def run do
     {:ok, transport} = Client.start_link()
-    parent_id = ensure_stable_parent_id(transport)
+    # parent_id = ensure_stable_parent_id(transport)
+
+    ResoniteLinkEx.NameResolver.clear_resonite_link_ex_slot(transport)
+    ResoniteLinkEx.NameResolver.ensure_slot_id(transport, "ResoniteLinkEx")
 
     name = "Sprint5Cube"
     position1 = %{"x" => 0.0, "y" => 1.0, "z" => 0.0}
@@ -25,11 +28,12 @@ defmodule Sprint5CoreSample do
     requested_slot_id = "Sprint5CoreSlot_#{System.system_time(:millisecond)}"
 
     IO.puts("[2/9] Cubeを作成します（addSlot） name=#{name}")
+
     add_slot_result =
       run_with_retry(fn ->
         call_core_over_transport(
           Core.add_slot(:core_builder, %{
-            parent_id: parent_id,
+            # parent_id: parent_id,
             name: name,
             position: position1,
             slot_id: requested_slot_id
@@ -38,7 +42,7 @@ defmodule Sprint5CoreSample do
         )
       end)
 
-    print_result(add_slot_result)
+    # print_result(add_slot_result)
     Process.sleep(@step_sleep_ms)
 
     slot_id =
@@ -48,14 +52,17 @@ defmodule Sprint5CoreSample do
       end
 
     IO.puts("[3/9] 作成したSlot情報を取得します（getSlot） slot_id=#{slot_id}")
+
     print_result(
       run_with_retry(fn ->
         call_core_over_transport(Core.get_slot(:core_builder, %{slot_id: slot_id}), transport)
       end)
     )
+
     Process.sleep(@step_sleep_ms)
 
     IO.puts("[4/9] Cubeの位置を更新します（updateSlot）")
+
     print_result(
       run_with_retry(fn ->
         call_core_over_transport(
@@ -64,6 +71,7 @@ defmodule Sprint5CoreSample do
         )
       end)
     )
+
     Process.sleep(@step_sleep_ms)
 
     mesh_add_result =
@@ -80,6 +88,7 @@ defmodule Sprint5CoreSample do
         {:ok, %{"entityId" => id}} when is_binary(id) -> id
         _ -> "Sprint5CoreMeshComponent_#{System.system_time(:millisecond)}"
       end
+
     IO.puts("[5/9] BoxMeshを追加して図形を表示します（addComponent）")
     print_result(mesh_add_result)
     IO.puts("結果: component_id=#{mesh_component_id}")
@@ -93,6 +102,7 @@ defmodule Sprint5CoreSample do
         }),
         transport
       )
+
     IO.puts("[6/9] MeshRendererを追加します（addComponent）")
     print_result(renderer_add_result)
     Process.sleep(@step_sleep_ms)
@@ -104,6 +114,7 @@ defmodule Sprint5CoreSample do
       end
 
     IO.puts("[7/9] Componentを更新します（updateComponent）")
+
     print_result(
       call_core_over_transport(
         Core.update_component(:core_builder, %{
@@ -113,14 +124,16 @@ defmodule Sprint5CoreSample do
         transport
       )
     )
+
     Process.sleep(@step_sleep_ms)
 
     temp_slot_id = "Sprint5CoreTemp_#{System.system_time(:millisecond)}"
+
     _ =
       run_with_retry(fn ->
         call_core_over_transport(
           Core.add_slot(:core_builder, %{
-            parent_id: parent_id,
+            # parent_id: parent_id,
             name: "Sprint5Temp",
             position: %{"x" => 0.0, "y" => 0.0, "z" => 0.0},
             slot_id: temp_slot_id
@@ -129,45 +142,45 @@ defmodule Sprint5CoreSample do
         )
       end)
 
-    temp_add_component_result =
-      run_with_retry(fn ->
-        call_core_over_transport(
-          Core.add_component(:core_builder, %{
-            slot_id: temp_slot_id,
-            component_type: "[FrooxEngine]FrooxEngine.BoxMesh"
-          }),
-          transport
-        )
-      end)
+    # temp_add_component_result =
+    #   run_with_retry(fn ->
+    #     call_core_over_transport(
+    #       Core.add_component(:core_builder, %{
+    #         slot_id: temp_slot_id,
+    #         component_type: "[FrooxEngine]FrooxEngine.BoxMesh"
+    #       }),
+    #       transport
+    #     )
+    #   end)
 
-    temp_comp_id =
-      case temp_add_component_result do
-        {:ok, %{"entityId" => id}} when is_binary(id) and id != "" -> id
-        _ -> nil
-      end
+    # temp_comp_id =
+    #   case temp_add_component_result do
+    #     {:ok, %{"entityId" => id}} when is_binary(id) and id != "" -> id
+    #     _ -> nil
+    #   end
 
-    IO.puts("[8/9] 一時Componentを削除します（removeComponent）")
-    if is_binary(temp_comp_id) do
-      print_result(
-        call_core_over_transport(
-          Core.remove_component(:core_builder, %{component_id: temp_comp_id}),
-          transport
-        )
-      )
-    else
-      IO.puts("結果: success=false error=\"一時ComponentのID取得に失敗しました\"")
-    end
-    Process.sleep(@step_sleep_ms)
+    # IO.puts("[8/9] 一時Componentを削除します（removeComponent）")
+    # if is_binary(temp_comp_id) do
+    #   print_result(
+    #     call_core_over_transport(
+    #       Core.remove_component(:core_builder, %{component_id: temp_comp_id}),
+    #       transport
+    #     )
+    #   )
+    # else
+    #   IO.puts("結果: success=false error=\"一時ComponentのID取得に失敗しました\"")
+    # end
+    # Process.sleep(@step_sleep_ms)
 
-    IO.puts("[9/9] 一時Slotを削除します（removeSlot）")
-    print_result(
-      run_with_retry(fn ->
-        call_core_over_transport(Core.remove_slot(:core_builder, %{slot_id: temp_slot_id}), transport)
-      end)
-    )
-    Process.sleep(@step_sleep_ms)
+    # IO.puts("[9/9] 一時Slotを削除します（removeSlot）")
+    # print_result(
+    #   run_with_retry(fn ->
+    #     call_core_over_transport(Core.remove_slot(:core_builder, %{slot_id: temp_slot_id}), transport)
+    #   end)
+    # )
+    # Process.sleep(@step_sleep_ms)
 
-    :ok
+    # :ok
   end
 
   defp ensure_stable_parent_id(transport) do
@@ -211,7 +224,9 @@ defmodule Sprint5CoreSample do
             (get_in(child, ["name", "value"]) || "") == name
           end)
 
-        if is_map(match) and is_binary(match["id"]), do: {:ok, match["id"]}, else: {:error, :not_found}
+        if is_map(match) and is_binary(match["id"]),
+          do: {:ok, match["id"]},
+          else: {:error, :not_found}
 
       _ ->
         {:error, :not_found}
@@ -222,7 +237,9 @@ defmodule Sprint5CoreSample do
 
   defp wait_slot_exists(transport, slot_id, retry_left) do
     case call_core_over_transport(Core.get_slot(:core_builder, %{slot_id: slot_id}), transport) do
-      {:ok, %{"success" => true}} -> :ok
+      {:ok, %{"success" => true}} ->
+        :ok
+
       _ ->
         Process.sleep(50)
         wait_slot_exists(transport, slot_id, retry_left - 1)
@@ -347,13 +364,13 @@ defmodule Sprint5CoreSample do
       {:ok,
        %{
          "messageId" => UUID.uuid4(),
-          "$type" => "addComponent",
-          "containerSlotId" => slot_id,
-          "data" => %{
-            "id" => "Sprint5CoreComp_#{System.system_time(:millisecond)}",
-            "componentType" => component_type
-          }
-        }}
+         "$type" => "addComponent",
+         "containerSlotId" => slot_id,
+         "data" => %{
+           "id" => "Sprint5CoreComp_#{System.system_time(:millisecond)}",
+           "componentType" => component_type
+         }
+       }}
     end
   end
 
@@ -371,7 +388,8 @@ defmodule Sprint5CoreSample do
 
   defp build_wire_request("removeComponent", payload) do
     with {:ok, component_id} <- fetch_required(payload, :component_id) do
-      {:ok, %{"messageId" => UUID.uuid4(), "$type" => "removeComponent", "componentId" => component_id}}
+      {:ok,
+       %{"messageId" => UUID.uuid4(), "$type" => "removeComponent", "componentId" => component_id}}
     end
   end
 
@@ -391,7 +409,10 @@ defmodule Sprint5CoreSample do
   end
 
   defp print_result({:ok, %{"success" => true}}), do: IO.puts("結果: success=true")
-  defp print_result({:ok, %{"success" => false, "errorInfo" => error}}), do: IO.puts("結果: success=false error=#{inspect(error)}")
+
+  defp print_result({:ok, %{"success" => false, "errorInfo" => error}}),
+    do: IO.puts("結果: success=false error=#{inspect(error)}")
+
   defp print_result({:ok, _}), do: IO.puts("結果: ok")
   defp print_result({:error, reason}), do: IO.puts("結果: error=#{inspect(reason)}")
   defp print_result(_), do: IO.puts("結果: unknown")
