@@ -3,7 +3,8 @@ defmodule ResoniteLinkEx.Core do
   Resonite の基本コマンドを低レベルで扱うモジュールです。
 
   `requestSessionData` / `addSlot` / `updateSlot` など、`$type` 単位のAPIを提供します。
-  ここでは「送信しやすい内部リクエスト形式」を作ることに集中し、実際の送信は行いません。
+  `client` に接続済み PID を渡した場合は `ResoniteLinkEx.Client.call/3` 経由で送信を行います。
+  PID 以外を渡した場合は「送信しやすい内部リクエスト形式」を返します。
 
   使い分けの目安:
   - 手早く使いたい: `ResoniteLinkEx`（公開入口）を使う
@@ -166,6 +167,10 @@ defmodule ResoniteLinkEx.Core do
 
   defp call_core(_client, type, _payload) when not is_binary(type), do: {:error, :invalid_request}
   defp call_core(_client, _type, payload) when not is_map(payload), do: {:error, :invalid_request}
+
+  defp call_core(client, type, payload) when is_pid(client) do
+    ResoniteLinkEx.Client.call(client, type, payload)
+  end
 
   defp call_core(_client, type, payload) do
     case Protocol.encode_request(type, payload) do

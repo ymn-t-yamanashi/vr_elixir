@@ -14,8 +14,12 @@ defmodule ResoniteLinkEx.NameResolver do
 
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Core
+  alias ResoniteLinkEx.Shapes
 
   @invalid_request {:error, :invalid_request}
+  @request_timeout_ms 1_500
+  @ensure_lookup_timeout_ms 1_000
+  @default_parent_name "ResoniteLinkEx"
 
   @doc """
   名前（必要なら親名条件つき）から、一意な `slot_id` を解決する。
@@ -54,13 +58,118 @@ defmodule ResoniteLinkEx.NameResolver do
     end
   end
 
+  @doc """
+  Root 配下に指定名の Slot が無ければ作成し、`slot_id` を返す。
+  """
+  @spec ensure_slot_id(term(), String.t(), keyword()) ::
+          {:ok, String.t()} | {:error, :not_found | :ambiguous_name | :invalid_request | term()}
+  def ensure_slot_id(client, name, opts \\ [])
+
+  def ensure_slot_id(_client, name, _opts)
+      when not is_binary(name) or name == "",
+      do: @invalid_request
+
+  def ensure_slot_id(_client, _name, opts) when not is_list(opts), do: @invalid_request
+
+  def ensure_slot_id(client, name, opts) do
+    resolve_opts =
+      Keyword.put_new(opts, :timeout_ms, @ensure_lookup_timeout_ms)
+
+    case resolve_slot_id(client, name, resolve_opts) do
+      {:ok, slot_id} ->
+        {:ok, slot_id}
+
+      {:error, reason} when reason in [:not_found, :request_timeout] ->
+        create_slot_if_missing(client, name, opts)
+
+      {:error, _reason} ->
+        {:error, :invalid_request}
+    end
+  end
+
+  defp create_slot_if_missing(client, name, opts) do
+    spawn_fun = Keyword.get(opts, :spawn_fun, &default_spawn_fun/2)
+
+    if is_function(spawn_fun, 2) do
+      with {:ok, %{slot_id: slot_id}} <- spawn_fun.(client, name) do
+        {:ok, slot_id}
+      end
+    else
+      @invalid_request
+    end
+  end
+
   defp fetch_slots(client, name, opts) do
     case Keyword.get(opts, :find_slots_fun) do
       find_slots_fun when is_function(find_slots_fun, 3) ->
         find_slots_fun.(client, name, opts)
 
       _other ->
-        @invalid_request
+        default_find_slots(client, name, opts)
+    end
+  end
+
+  defp default_find_slots(client, name, opts) do
+    timeout_ms = Keyword.get(opts, :timeout_ms, @request_timeout_ms)
+    debug? = Keyword.get(opts, :debug, false)
+
+    case fetch_root_slot_id(client, timeout_ms) do
+      {:ok, root_slot_id} ->
+        find_slots_under_root_only(client, root_slot_id, name, timeout_ms, debug?)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp fetch_root_slot_id(client, timeout_ms) do
+    case request_over_transport(client, "requestSessionData", %{}, timeout_ms) do
+      {:ok, response} ->
+        extract_root_slot_id(response)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp find_slots_under_root_only(client, root_slot_id, target_name, timeout_ms, debug?) do
+    with {:ok, root_response} <-
+           request_over_transport(client, "getSlot", %{"slotId" => root_slot_id}, timeout_ms),
+         {:ok, _root_name, _parent_name, child_ids} <-
+           extract_slot_info(root_response, root_slot_id) do
+      check_root_children(client, child_ids, target_name, timeout_ms, [], debug?)
+    end
+  end
+
+  defp check_root_children(_client, [], _target_name, _timeout_ms, acc, _debug?),
+    do: {:ok, Enum.reverse(acc)}
+
+  defp check_root_children(client, [child_id | rest], target_name, timeout_ms, acc, debug?) do
+    if debug?, do: IO.puts("[NameResolver] visiting root child slot_id=#{child_id}")
+
+    case request_over_transport(client, "getSlot", %{"slotId" => child_id}, timeout_ms) do
+      {:ok, response} ->
+        {:ok, slot_name, parent_name, _child_ids} = extract_slot_info(response, child_id)
+        if debug?, do: IO.puts("[NameResolver] slot name=#{inspect(slot_name)}")
+
+        next_acc =
+          if slot_name == target_name do
+            [%{slot_id: child_id, name: slot_name, parent_name: parent_name} | acc]
+          else
+            acc
+          end
+
+        if next_acc != [] do
+          {:ok, Enum.reverse(next_acc)}
+        else
+          check_root_children(client, rest, target_name, timeout_ms, next_acc, debug?)
+        end
+
+      {:error, :not_found} ->
+        check_root_children(client, rest, target_name, timeout_ms, acc, debug?)
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -122,6 +231,270 @@ defmodule ResoniteLinkEx.NameResolver do
 
       {:error, :invalid_request} ->
         Core.get_slot(client, %{slot_id: slot_id})
+    end
+  end
+
+  defp request_over_transport(client, type, data, timeout_ms)
+       when is_pid(client) and is_binary(type) and is_map(data) do
+    request = build_transport_request(type, data)
+
+    with {:ok, client_pid} <- Client.client_pid(client),
+         :ok <- Client.register_pending(client_pid, request["messageId"], self()),
+         :ok <- Client.send_json(client, request) do
+      await_response(client_pid, request["messageId"], timeout_ms)
+    end
+  end
+
+  defp request_over_transport(_client, _type, _data, _timeout_ms), do: @invalid_request
+
+  defp build_transport_request("getSlot", %{"slotId" => slot_id}) when is_binary(slot_id) do
+    %{"messageId" => UUID.uuid4(), "$type" => "getSlot", "slotId" => slot_id}
+  end
+
+  defp build_transport_request("requestSessionData", data) when is_map(data) do
+    %{"messageId" => UUID.uuid4(), "$type" => "requestSessionData", "data" => data}
+  end
+
+  defp build_transport_request(type, data) do
+    %{"messageId" => UUID.uuid4(), "$type" => type, "data" => data}
+  end
+
+  defp await_response(client_pid, message_id, timeout_ms) do
+    deadline = System.monotonic_time(:millisecond) + timeout_ms
+    do_await_response(client_pid, message_id, deadline)
+  end
+
+  defp do_await_response(client_pid, message_id, deadline) do
+    case Client.last_response(client_pid) do
+      %{"messageId" => ^message_id} = response ->
+        {:ok, response}
+
+      _other ->
+        if System.monotonic_time(:millisecond) >= deadline do
+          {:error, :request_timeout}
+        else
+          Process.sleep(20)
+          do_await_response(client_pid, message_id, deadline)
+        end
+    end
+  end
+
+  defp extract_root_slot_id(%{"data" => data}) when is_map(data) do
+    root_slot_id =
+      Map.get(data, "rootSlotId") ||
+        Map.get(data, "rootSlotID") ||
+        Map.get(data, "rootSlot") ||
+        get_in(data, ["session", "rootSlotId"]) ||
+        get_in(data, ["session", "rootSlotID"])
+
+    if is_binary(root_slot_id) and root_slot_id != "" do
+      {:ok, root_slot_id}
+    else
+      {:ok, "Root"}
+    end
+  end
+
+  defp extract_root_slot_id(_response), do: {:ok, "Root"}
+
+  defp extract_slot_info(response, _fallback_slot_id) do
+    data = Map.get(response, "data", %{})
+
+    slot_name =
+      data
+      |> pick_value([
+        ["name"],
+        ["Name"],
+        ["slot", "name"],
+        ["slot", "Name"],
+        ["slot", "SlotName"],
+        ["slotName"],
+        ["SlotName"]
+      ])
+      |> normalize_name_value()
+
+    parent_name =
+      pick_value(data, [
+        ["parentName"],
+        ["ParentName"],
+        ["parent", "name"],
+        ["parent", "Name"],
+        ["slot", "parentName"],
+        ["slot", "ParentName"]
+      ])
+
+    child_ids = extract_child_slot_ids(data)
+
+    {:ok, slot_name, parent_name, child_ids}
+  end
+
+  defp extract_child_slot_ids(data) when is_map(data) do
+    raw_children = pick_children(data)
+
+    raw_children
+    |> List.wrap()
+    |> Enum.map(fn
+      %{"slotId" => id} when is_binary(id) -> id
+      %{"SlotId" => id} when is_binary(id) -> id
+      %{"id" => id} when is_binary(id) -> id
+      %{"Id" => id} when is_binary(id) -> id
+      %{"ID" => id} when is_binary(id) -> id
+      %{"id" => id} when is_binary(id) -> id
+      %{slot_id: id} when is_binary(id) -> id
+      %{id: id} when is_binary(id) -> id
+      id when is_binary(id) -> id
+      _other -> nil
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp pick_children(data) do
+    pick_value(data, [
+      ["children"],
+      ["Children"],
+      ["childSlots"],
+      ["ChildSlots"],
+      ["slots"],
+      ["Slots"],
+      ["slot", "children"],
+      ["slot", "Children"],
+      ["slot", "childSlots"],
+      ["slot", "ChildSlots"],
+      ["slot", "slots"],
+      ["slot", "Slots"]
+    ]) || []
+  end
+
+  defp pick_value(data, paths) when is_map(data) and is_list(paths) do
+    Enum.find_value(paths, fn path -> get_in(data, path) end)
+  end
+
+  defp normalize_name_value(value) when is_binary(value), do: value
+  defp normalize_name_value(%{"value" => value}) when is_binary(value), do: value
+  defp normalize_name_value(%{value: value}) when is_binary(value), do: value
+  defp normalize_name_value(_value), do: nil
+
+  defp default_spawn_fun(client, name) do
+    Shapes.spawn_cube(client, name: name, parent_name: @default_parent_name)
+  end
+
+  @doc """
+  Rootに`ResoniteLinkEx`のスロットが存在する場合に削除します。
+
+  ## Parameters
+  - `client`: `pid()` または同等の呼び出し対象。
+  - `opts`: オプションパラメータ。
+
+  ## Returns
+  - `:ok` or `{:error, reason}`: 成功または失敗。
+  """
+  @spec clear_resonite_link_ex_slot(term(), keyword()) :: :ok | {:error, term()}
+  def clear_resonite_link_ex_slot(client, opts \\ []) do
+    timeout_ms = Keyword.get(opts, :timeout_ms, @request_timeout_ms)
+    do_clear_root_children_named_resonitelinkex(client, timeout_ms, 5)
+  end
+
+  defp do_clear_root_children_named_resonitelinkex(client, timeout_ms, retry_left) do
+    with {:ok, root_slot_id} <- fetch_root_slot_id(client, timeout_ms),
+         {:ok, root_response} <-
+           request_over_transport(client, "getSlot", %{"slotId" => root_slot_id}, timeout_ms),
+         %{"data" => root_data} when is_map(root_data) <- root_response do
+      ids =
+        root_data
+        |> pick_children()
+        |> List.wrap()
+        |> Enum.map(&extract_child_name_id/1)
+        |> Enum.filter(&match_resonite_link_ex_name?(&1.name))
+        |> Enum.map(& &1.id)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      _ =
+        Enum.reduce_while(ids, :ok, fn child_id, _acc ->
+          case delete_slot(client, child_id, timeout_ms) do
+            {:ok, _} -> {:cont, :ok}
+            :ok -> {:cont, :ok}
+            {:error, :not_found} -> {:cont, :ok}
+            {:error, _reason} -> {:cont, :ok}
+          end
+        end)
+
+      # Deletion may be asynchronous, so verify and retry.
+      remaining_ids =
+        case request_over_transport(client, "getSlot", %{"slotId" => root_slot_id}, timeout_ms) do
+          {:ok, %{"data" => refreshed} = _response} when is_map(refreshed) ->
+            refreshed
+            |> pick_children()
+            |> List.wrap()
+            |> Enum.map(&extract_child_name_id/1)
+            |> Enum.filter(&match_resonite_link_ex_name?(&1.name))
+            |> Enum.map(& &1.id)
+            |> Enum.reject(&is_nil/1)
+            |> Enum.uniq()
+
+          _ ->
+            []
+        end
+
+      cond do
+        remaining_ids == [] ->
+          :ok
+
+        retry_left > 0 ->
+          Process.sleep(120)
+          do_clear_root_children_named_resonitelinkex(client, timeout_ms, retry_left - 1)
+
+        true ->
+          {:error, :conflict}
+      end
+    else
+      {:error, :not_found} -> :ok
+      {:error, reason} -> {:error, reason}
+      _ -> :ok
+    end
+  end
+
+  defp extract_child_name_id(child) do
+    name =
+      child
+      |> pick_value([["name"], ["Name"]])
+      |> normalize_name_value()
+
+    id =
+      case child do
+        %{"slotId" => value} when is_binary(value) -> value
+        %{"SlotId" => value} when is_binary(value) -> value
+        %{"id" => value} when is_binary(value) -> value
+        %{"Id" => value} when is_binary(value) -> value
+        %{slot_id: value} when is_binary(value) -> value
+        %{id: value} when is_binary(value) -> value
+        _ -> nil
+      end
+
+    %{id: id, name: name}
+  end
+
+  defp match_resonite_link_ex_name?(name) when is_binary(name) do
+    String.trim(name) == "ResoniteLinkEx"
+  end
+
+  defp match_resonite_link_ex_name?(_), do: false
+
+  defp delete_slot(client, slot_id, timeout_ms) do
+    case Client.client_pid(client) do
+      {:ok, client_pid} ->
+        request = %{
+          "messageId" => UUID.uuid4(),
+          "$type" => "removeSlot",
+          "slotId" => slot_id
+        }
+
+        with :ok <- Client.register_pending(client_pid, request["messageId"], self()),
+             :ok <- Client.send_json(client, request) do
+          await_response(client_pid, request["messageId"], timeout_ms)
+        end
+
+      {:error, :invalid_request} ->
+        Core.remove_slot(client, %{slot_id: slot_id})
     end
   end
 end

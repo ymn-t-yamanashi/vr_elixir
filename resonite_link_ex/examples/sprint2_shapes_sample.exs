@@ -8,21 +8,17 @@ defmodule Sprint2ShapesSample do
   alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.Shapes
 
-  @host "localhost"
-
   def run do
-    # 1) ポートを受け取る
-    port = parse_port(System.argv())
+    # 1) トランスポートを起動する（host は localhost、port は自動検出）
+    {:ok, transport} = Client.start_link()
 
-    # 2) クライアントとトランスポートを起動する
-    {:ok, client} = ResoniteLinkEx.start_client()
-    {:ok, transport} = Client.start_link(client, host: @host, port: port, path: "")
+    # ResoniteLinkExスロットが既に存在する場合に削除
+    ResoniteLinkEx.NameResolver.clear_resonite_link_ex_slot(transport)
 
-    # 3) セッション準備完了を待つ
-    wait_session_ready(client, 30)
-    ensure_resonite_link_ex_slot(transport, client)
+    # 2) ResoniteLinkExスロットを確実に作成
+    ResoniteLinkEx.NameResolver.ensure_slot_id(transport, "ResoniteLinkEx")
 
-    # 4) 7図形を順番に生成する
+    # 3) 7図形を順番に生成する
     Shapes.spawn_quad(transport,
       name: "Sprint2Quad",
       position: %{"x" => -1.8, "y" => 1.4, "z" => 0.5},
@@ -90,78 +86,6 @@ defmodule Sprint2ShapesSample do
 
   defp handle_spawn_result!({:error, reason}, shape) do
     raise "図形生成に失敗: shape=#{shape} reason=#{inspect(reason)}"
-  end
-
-  defp ensure_resonite_link_ex_slot(transport, client) do
-    warmup_name = "_sprint2_parent_bootstrap_" <> String.slice(UUID.uuid4(), 0, 8)
-
-    do_spawn_warmup(transport, client, warmup_name, 3)
-  end
-
-  defp do_spawn_warmup(_transport, _client, _name, 0), do: :ok
-
-  defp do_spawn_warmup(transport, client, name, retry_left) do
-    case Shapes.spawn_cube(transport,
-           name: name,
-           position: %{"x" => 0.0, "y" => -1000.0, "z" => 0.0},
-           scale: %{"x" => 0.01, "y" => 0.01, "z" => 0.01},
-           client_pid: client
-         ) do
-      {:ok, _ids} ->
-        Process.sleep(500)
-        :ok
-
-      {:error, _reason} ->
-        Process.sleep(500)
-        do_spawn_warmup(transport, client, name, retry_left - 1)
-    end
-  end
-
-  defp wait_session_ready(_client, 0) do
-    raise "session_ready が true になりませんでした。ResoniteLink 接続状態を確認してください。"
-  end
-
-  defp wait_session_ready(client, retry_left) do
-    if Client.session_ready?(client) do
-      :ok
-    else
-      Process.sleep(100)
-      wait_session_ready(client, retry_left - 1)
-    end
-  end
-
-  defp parse_port(args) do
-    cleaned = Enum.reject(args, &(&1 == "--"))
-
-    case cleaned do
-      ["--port", port_text | _rest] -> parse_port_value(port_text)
-      [port_text | _rest] -> parse_port_value(port_text)
-      [] -> detect_port!()
-    end
-  end
-
-  defp parse_port_value(port_text) do
-    case Integer.parse(port_text) do
-      {port, ""} when port > 0 and port <= 65_535 -> port
-      _ -> raise "ポート指定が不正です。1-65535 の整数を指定してください。例: --port 9341"
-    end
-  end
-
-  defp detect_port! do
-    case ResoniteLinkEx.find_resonite_link_port() do
-      {:ok, port} ->
-        IO.puts("ポート自動検出: #{port}")
-        port
-
-      {:error, :port_not_found} ->
-        raise """
-        ポートを自動検出できませんでした。
-        ResoniteLinkを有効化するか、--port で明示指定してください。
-        """
-
-      {:error, reason} ->
-        raise "ポート検出に失敗しました: #{inspect(reason)}"
-    end
   end
 end
 

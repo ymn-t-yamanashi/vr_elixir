@@ -1,6 +1,7 @@
 defmodule ResoniteLinkEx.NameResolverTest do
   use ExUnit.Case, async: true
 
+  alias ResoniteLinkEx.Client
   alias ResoniteLinkEx.NameResolver
 
   test "resolve_slot_id/3 は一意な name を解決できる" do
@@ -143,10 +144,10 @@ defmodule ResoniteLinkEx.NameResolverTest do
 
   test "resolve_slot_id/3 は default_get_slot で transport 経路を利用できる" do
     {server_pid, port} = start_ws_mock_server()
-    assert {:ok, client} = ResoniteLinkEx.start_client()
+    assert {:ok, client} = Client.start_link([])
 
     assert {:ok, transport} =
-             ResoniteLinkEx.Client.start_link(client, host: "localhost", port: port)
+             Client.start_link(client, host: "localhost", port: port)
 
     find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
 
@@ -158,7 +159,7 @@ defmodule ResoniteLinkEx.NameResolverTest do
   end
 
   test "resolve_slot_id/3 は default_get_slot の fallback で Client.call を使う" do
-    assert {:ok, client} = ResoniteLinkEx.start_client()
+    assert {:ok, client} = Client.start_link([])
     find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
 
     assert {:ok, "slot_a"} =
@@ -166,7 +167,7 @@ defmodule ResoniteLinkEx.NameResolverTest do
   end
 
   test "resolve_slot_id/3 は default_get_slot の fallback 経路でも解決できる" do
-    assert {:ok, client} = ResoniteLinkEx.start_client()
+    assert {:ok, client} = Client.start_link([])
     {:ok, fake_transport} = Agent.start_link(fn -> %{client_pid: client} end)
     find_slots_fun = fn _client, _name, _opts -> {:ok, [%{slot_id: "slot_a", name: "CubeA"}]} end
 
@@ -183,6 +184,46 @@ defmodule ResoniteLinkEx.NameResolverTest do
              NameResolver.resolve_slot_id(:client, "CubeA",
                find_slots_fun: find_slots_fun,
                get_slot_fun: fn _slot_id -> {:ok, %{}} end
+             )
+  end
+
+  test "ensure_slot_id/3 は既存があればそれを返す" do
+    find_slots_fun = fn _client, _name, _opts ->
+      {:ok, [%{slot_id: "slot_existing", name: "ResoniteLinkEx"}]}
+    end
+
+    get_slot_fun = fn _client, _slot_id -> {:ok, %{}} end
+    spawn_fun = fn _client, _name -> {:ok, %{slot_id: "slot_new"}} end
+
+    assert {:ok, "slot_existing"} =
+             NameResolver.ensure_slot_id(:client, "ResoniteLinkEx",
+               find_slots_fun: find_slots_fun,
+               get_slot_fun: get_slot_fun,
+               spawn_fun: spawn_fun
+             )
+  end
+
+  test "ensure_slot_id/3 は見つからない場合に生成して返す" do
+    find_slots_fun = fn _client, _name, _opts -> {:ok, []} end
+    get_slot_fun = fn _client, _slot_id -> {:ok, %{}} end
+    spawn_fun = fn _client, "ResoniteLinkEx" -> {:ok, %{slot_id: "slot_new"}} end
+
+    assert {:ok, "slot_new"} =
+             NameResolver.ensure_slot_id(:client, "ResoniteLinkEx",
+               find_slots_fun: find_slots_fun,
+               get_slot_fun: get_slot_fun,
+               spawn_fun: spawn_fun
+             )
+  end
+
+  test "ensure_slot_id/3 は探索タイムアウトでも生成して返す" do
+    find_slots_fun = fn _client, _name, _opts -> {:error, :request_timeout} end
+    spawn_fun = fn _client, _name -> {:ok, %{slot_id: "slot_new"}} end
+
+    assert {:ok, "slot_new"} =
+             NameResolver.ensure_slot_id(:client, "ResoniteLinkEx",
+               find_slots_fun: find_slots_fun,
+               spawn_fun: spawn_fun
              )
   end
 

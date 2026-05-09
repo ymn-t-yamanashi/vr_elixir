@@ -12,6 +12,7 @@ defmodule ResoniteLinkEx.Client do
   リクエストとレスポンスを安全に対応付ける中核レイヤです。
   """
 
+  alias ResoniteLinkEx.PortDiscovery
   alias ResoniteLinkEx.Protocol
 
   use GenServer
@@ -21,6 +22,20 @@ defmodule ResoniteLinkEx.Client do
   @invalid_request {:error, :invalid_request}
   @request_timeout {:error, :request_timeout}
   @default_request_timeout_ms 10_000
+  @default_host "localhost"
+  @default_path ""
+
+  @doc """
+  トランスポートプロセスを既定設定で起動する。
+
+  host は `localhost` を使用し、port は自動検出する。
+  """
+  @spec start_link() :: {:ok, pid()} | {:error, term()}
+  def start_link do
+    with {:ok, port} <- PortDiscovery.find_resonite_link_port() do
+      start_link(host: @default_host, port: port, path: @default_path)
+    end
+  end
 
   @doc """
   クライアントプロセスを起動する。
@@ -36,9 +51,22 @@ defmodule ResoniteLinkEx.Client do
       match?({:ok, pid} when is_pid(pid), ResoniteLinkEx.Client.start_link([]))
       true
   """
-  @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, [])
+  @spec start_link(keyword()) :: GenServer.on_start() | {:ok, pid()} | {:error, term()}
+  def start_link(opts) when is_list(opts) do
+    if transport_opts?(opts) do
+      with {:ok, client_pid} <- GenServer.start_link(__MODULE__, [], []) do
+        start_link(client_pid, opts)
+      end
+    else
+      GenServer.start_link(__MODULE__, opts, [])
+    end
+  end
+
+  def start_link(_opts), do: {:error, :invalid_request}
+
+  defp transport_opts?(opts) do
+    Keyword.has_key?(opts, :host) or Keyword.has_key?(opts, :port) or
+      Keyword.has_key?(opts, :path)
   end
 
   @doc """
@@ -275,8 +303,21 @@ defmodule ResoniteLinkEx.Client do
       {:error, :invalid_request}
   """
   @spec session_ready?(pid()) :: boolean() | {:error, :invalid_request}
-  def session_ready?(client) when is_pid(client), do: GenServer.call(client, :session_ready)
-  def session_ready?(_client), do: @invalid_request
+  def session_ready?(target_pid) when is_pid(target_pid) do
+    case client_pid(target_pid) do
+      {:ok, client} ->
+        GenServer.call(client, :session_ready)
+
+      {:error, :invalid_request} ->
+        try do
+          GenServer.call(target_pid, :session_ready)
+        catch
+          :exit, _reason -> @invalid_request
+        end
+    end
+  end
+
+  def session_ready?(_target_pid), do: @invalid_request
 
   @doc """
   再接続中なら `true` を返す。
@@ -495,9 +536,7 @@ defmodule ResoniteLinkEx.Client do
     end
   end
 
-  @default_host "localhost"
   @default_port 12_512
-  @default_path ""
 
   @doc """
   トランスポートプロセスを起動する。
@@ -738,6 +777,11 @@ defmodule ResoniteLinkEx.Client do
   end
 
   def handle_frame(_frame, state), do: {:ok, state}
+
+  @doc """
+  WebSocket の pong フレームを受信したときに状態を維持する。
+  """
+  def handle_pong(_frame, state), do: {:ok, state}
 
   defp normalize_path(path) when is_binary(path) do
     cond do

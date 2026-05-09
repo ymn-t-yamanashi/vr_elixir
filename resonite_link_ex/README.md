@@ -1,57 +1,27 @@
 # ResoniteLinkEx
 
-ResoniteLink 用の Elixir クライアント最小実装です。
+## 動かし方
 
-## スプリント1対象
-
-- `requestSessionData`
-- `addSlot`
-- `updateSlot`
-- `addComponent`
-- `updateComponent`
-- `removeComponent`
-- `removeSlot`
-
-## 主な公開 API
-
-- `ResoniteLinkEx.start_client/1`
-- `ResoniteLinkEx.receive_response/2`
-- `ResoniteLinkEx.Core.request_session_data/1`
-- `ResoniteLinkEx.Core.add_slot/2`
-- `ResoniteLinkEx.Core.update_slot/2`
-- `ResoniteLinkEx.Core.add_component/2`
-- `ResoniteLinkEx.Core.update_component/2`
-- `ResoniteLinkEx.Core.remove_component/2`
-- `ResoniteLinkEx.Core.remove_slot/2`
-- `ResoniteLinkEx.Core.get_slot/2`
-
-## ホストでの品質ゲート
+### 1. 依存関係を入れる
 
 ```bash
-cd resonite_link_ex && mix local.hex --force && mix local.rebar --force && mix deps.get && mix format --check-formatted && mix compile --warnings-as-errors && mix check.docs && mix credo --strict && mix test --cover
+cd resonite_link_ex
+mix local.hex --force
+mix local.rebar --force
+mix deps.get
 ```
 
-## ドキュメント生成
+### 2. 一番簡単な立方体の出し方
+
+Resonite 側で ResoniteLink を有効化してから実行します。
+
+```elixir
+{:ok, transport} = ResoniteLinkEx.Client.start_link()
+ResoniteLinkEx.Shapes.spawn_cube(transport, name: "SimpleCube")
+```
+
+### 3. サンプルを実行する
 
 ```bash
-cd resonite_link_ex && mix docs
+mix run examples/sprint2_shapes_sample.exs
 ```
-
-## テスト方針
-
-- `mix test` は Resonite 未起動でも実行できる（実機接続不要）。
-- 実機接続が必要な検証は `@tag integration: true` を付け、`mix test --only integration` でのみ実行する。
-
-## スプリント1実行手順
-
-`docs/sprint1/スプリント1実行手順.md` を参照してください。
-
-## サンプル実行（赤い正方形）
-
-Resonite 側で ResoniteLink を有効化した状態で実行します。ポート指定は必須です。
-
-```bash
-mix run examples/red_square_sample.exs -- --port 9342
-```
-
-接続先ホストは `localhost` 固定です（`127.0.0.1` は使用しません）。

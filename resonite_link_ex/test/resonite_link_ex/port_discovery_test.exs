@@ -11,14 +11,15 @@ defmodule ResoniteLinkEx.PortDiscoveryTest do
 
     fake_cmd = fn "ss", ["-ltnp"] -> {output, 0} end
 
-    assert {:ok, 42_571} = PortDiscovery.find_resonite_link_port(fake_cmd)
+    assert {:ok, 42_571} = PortDiscovery.find_resonite_link_port(fake_cmd, fn -> true end)
   end
 
   test "find_resonite_link_port/1 は候補がないと port_not_found を返す" do
     output = "LISTEN 0 128 127.0.0.1:12345 0.0.0.0:* users:((\"beam.smp\",pid=1,fd=1))"
     fake_cmd = fn "ss", ["-ltnp"] -> {output, 0} end
 
-    assert {:error, :port_not_found} = PortDiscovery.find_resonite_link_port(fake_cmd)
+    assert {:error, :port_not_found} =
+             PortDiscovery.find_resonite_link_port(fake_cmd, fn -> true end)
   end
 
   test "find_resonite_link_port/1 は不正ポート値を除外して port_not_found を返す" do
@@ -27,7 +28,8 @@ defmodule ResoniteLinkEx.PortDiscoveryTest do
 
     fake_cmd = fn "ss", ["-ltnp"] -> {output, 0} end
 
-    assert {:error, :port_not_found} = PortDiscovery.find_resonite_link_port(fake_cmd)
+    assert {:error, :port_not_found} =
+             PortDiscovery.find_resonite_link_port(fake_cmd, fn -> true end)
   end
 
   test "find_resonite_link_port/1 は数値でないポート値を除外して port_not_found を返す" do
@@ -36,12 +38,15 @@ defmodule ResoniteLinkEx.PortDiscoveryTest do
 
     fake_cmd = fn "ss", ["-ltnp"] -> {output, 0} end
 
-    assert {:error, :port_not_found} = PortDiscovery.find_resonite_link_port(fake_cmd)
+    assert {:error, :port_not_found} =
+             PortDiscovery.find_resonite_link_port(fake_cmd, fn -> true end)
   end
 
   test "find_resonite_link_port/1 はコマンド失敗で command_failed を返す" do
     fake_cmd = fn "ss", ["-ltnp"] -> {"", 1} end
-    assert {:error, :command_failed} = PortDiscovery.find_resonite_link_port(fake_cmd)
+
+    assert {:error, :command_failed} =
+             PortDiscovery.find_resonite_link_port(fake_cmd, fn -> true end)
   end
 
   test "find_resonite_link_port/1 は不正引数で invalid_request を返す" do

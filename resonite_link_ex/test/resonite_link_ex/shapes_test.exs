@@ -142,7 +142,7 @@ defmodule ResoniteLinkEx.ShapesTest do
     end
 
     test "client_pid 指定時は pending へ登録する" do
-      assert {:ok, client} = ResoniteLinkEx.start_client()
+      assert {:ok, client} = Client.start_link([])
       send_fun = fn _transport_pid, _payload -> :ok end
 
       assert {:ok, _ids} =
